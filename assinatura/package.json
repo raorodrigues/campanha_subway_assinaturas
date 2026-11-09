@@ -1,0 +1,30 @@
+{
+  "name": "assinatura",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": "^22.22.3 || ^24.15.0 || >=26.0.0"
+  },
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev --host 0.0.0.0 --port 3000",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "pm2:start": "pm2 startOrRestart ecosystem.config.cjs --update-env",
+    "pm2:stop": "pm2 stop assinatura",
+    "pm2:logs": "pm2 logs assinatura --lines 50",
+    "typecheck": "nuxt typecheck",
+    "test": "node --test tests/*.test.mjs",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "nuxt": "^4.6.4",
+    "vue": "^3.5.44",
+    "vue-router": "^5.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0",
+    "vue-tsc": "^3.0.0"
+  }
+}
