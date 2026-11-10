@@ -1,112 +1,153 @@
 /*
  * Kiosk motion system — the ONE place to tune screen choreography.
+ * Modelled on referencia_animacao.mp4.
  *
  * How it works
  * - app.vue renders the screens inside <Transition name="screen" mode="out-in">.
- * - Every animated object carries `m` plus a role class (m-drop, m-pop, m-left,
- *   m-right, m-rise, m-zoom). Roles pick the keyframes; the choreography map
- *   below gives each object its enter index (--d) and exit index (--x).
+ * - Every animated object carries `m` plus a role class (m-type, m-pop,
+ *   m-strip, m-line). Roles pick the keyframes; the timeline map below gives
+ *   each object its start time and duration on enter (--in-at, --in-dur) and
+ *   on leave (--out-at, --out-dur).
+ * - Typed text lines (TypedImage) derive their timing from their character
+ *   count (--n), the characters before them (--c) and the screen's --m-char.
  * - Vue only watches the screen root, so the root runs an invisible "hold"
- *   animation whose length covers the slowest staggered child
- *   (duration + steps × stagger). Keep --in-steps/--out-steps equal to the
- *   highest --d/--x used on that screen.
- * - Only transform and opacity are animated (compositor-only).
+ *   animation of --in-total / --out-total. Keep those equal to the slowest
+ *   child on that screen.
+ * - Pacing: entrances nobody waits for (back to welcome, thanks) follow the
+ *   reference; everything after a tap fits in ~800 ms (300 out + 500 in).
  */
 
 :root {
-  /* Durations — "suave" profile: ~600 ms per screen change */
-  --m-in: 300ms;
-  --m-out: 160ms;
-  --m-stagger-in: 30ms;
-  --m-stagger-out: 25ms;
   --m-reduced: 160ms;
-  --m-attract-pulse-period: 3s;
-  --m-attract-float-period: 4.2s;
-
-  /* Easings — no overshoot. For the "enérgica" profile use
-     --m-ease-back: cubic-bezier(0.34, 1.56, 0.64, 1) and
-     --m-ease-slide: cubic-bezier(0.22, 1.24, 0.36, 1). */
-  --m-ease-back: cubic-bezier(0.22, 1, 0.36, 1); /* ease-out quint: settles without bounce */
-  --m-ease-slide: cubic-bezier(0.22, 1, 0.36, 1);
-  --m-ease-in: cubic-bezier(0.4, 0, 1, 1); /* gentle exit */
-
-  /* Distances — short travel, small scale changes */
-  --m-drop: 40px;
-  --m-rise: 56px;
-  --m-slide: 64px;
-  --m-pop-scale: 0.94;
-  --m-zoom-scale: 0.94;
-  --m-sent-scale: 0.97;
-  --m-float: 5px;
-  --m-pulse-scale: 1.025;
+  --m-ease-out: cubic-bezier(0.22, 1, 0.36, 1); /* ease-out quint: settles without bounce */
+  --m-ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+  --m-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --m-type-soft: 24px; /* soft edge of the typing mask ≈ the fading last letter */
+  --m-pop-scale: 0.9;
+  --m-line-width: 0.006; /* box collapsed to a ~5px vertical line */
+  --m-attract-period: 2.4s;
 }
 
-/* ---------- Choreography map: enter index (--d) / exit index (--x) ---------- */
+/* ------------------------------ Timeline map ------------------------------ */
 
-.welcome-screen { --in-steps: 2; --out-steps: 2; }
-.welcome-screen__headline { --d: 0; --x: 2; }
-.welcome-screen__button { --d: 1; --x: 1; }
-.welcome-screen__food-left,
-.welcome-screen__food-right { --d: 2; --x: 0; }
+.welcome-screen {
+  --m-char: 32ms; /* 52 characters ≈ 1.66s, as in the reference */
+  --m-type-out-stagger: 25ms;
+  --m-type-out: 180ms;
+  --in-total: 1700ms;
+  --out-total: 300ms;
+}
+.welcome-screen__food { --in-at: 100ms; --in-dur: 700ms; --out-dur: 280ms; }
+/* Pops in while the headline is still typing; tappable from that moment. */
+.welcome-screen__button { --in-at: 950ms; --in-dur: 380ms; --out-dur: 180ms; }
 
-.signing-screen { --in-steps: 3; --out-steps: 1; }
-.signing-screen__instructions { --d: 0; --x: 1; }
-.signing-screen__pad { --d: 1; --x: 0; }
-.signing-screen__hand { --d: 3; --x: 0; }
+.signing-screen {
+  --m-char: 10ms;
+  --m-type-out-stagger: 40ms;
+  --m-type-out: 200ms;
+  --in-total: 500ms;
+  --out-total: 420ms;
+}
+.signing-screen__pad { --in-dur: 460ms; --out-dur: 420ms; }
+.signing-screen__hand { --in-at: 250ms; --in-dur: 250ms; --out-dur: 160ms; }
 
-.thank-you-screen { --in-steps: 0; --out-steps: 0; }
-.thank-you-screen__message { --d: 0; --x: 0; }
+.thank-you-screen {
+  --m-char: 32ms;
+  --m-type-out-stagger: 40ms;
+  --m-type-out: 200ms;
+  --in-total: 850ms;
+  --out-total: 260ms;
+}
+
+/* ------------------------------ Typed text mask ------------------------------ */
+
+/*
+ * The mask is twice the line's width: one half opaque, one half clear, with a
+ * soft edge in the middle. Sliding it from 100% to 0% moves the edge across
+ * the line from left to right. The resting state (0%) shows the whole line.
+ */
+.m-type {
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(50% - var(--m-type-soft)), transparent calc(50% + var(--m-type-soft)));
+  mask-image: linear-gradient(90deg, #000 calc(50% - var(--m-type-soft)), transparent calc(50% + var(--m-type-soft)));
+  -webkit-mask-size: 200% 100%;
+  mask-size: 200% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: 0 0;
+  mask-position: 0 0;
+  --in-at: calc(var(--c, 0) * var(--m-char));
+  --in-dur: calc(var(--n, 1) * var(--m-char));
+  --out-at: calc(var(--x, 0) * var(--m-type-out-stagger));
+  --out-dur: var(--m-type-out);
+}
+
+/* ---------------------------------- Boot ---------------------------------- */
+
+/* Page load: the footer rises while the welcome plays its entrance (Transition appear). */
+.kiosk:not(.is-ready) .screen-footer {
+  transform: translateY(284px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .kiosk.is-ready .screen-footer {
+    animation: m-footer-rise 400ms var(--m-ease-out) 80ms both;
+  }
+}
 
 /* ---------------------------------- Motion ---------------------------------- */
 
 @media (prefers-reduced-motion: no-preference) {
-  /* Root carrier: tells Vue how long the staggered choreography lasts. */
-  .screen-enter-active {
-    animation: m-hold calc(var(--m-in) + var(--in-steps, 0) * var(--m-stagger-in)) linear both;
-  }
-
-  .screen-leave-active {
-    animation: m-hold calc(var(--m-out) + var(--out-steps, 0) * var(--m-stagger-out)) linear both;
-  }
+  .screen-enter-active { animation: m-hold var(--in-total) linear both; }
+  .screen-leave-active { animation: m-hold var(--out-total) linear both; }
 
   .screen-enter-active .m {
-    animation-duration: var(--m-in);
-    animation-timing-function: var(--m-ease-back);
-    animation-delay: calc(var(--d, 0) * var(--m-stagger-in));
+    animation-delay: var(--in-at, 0ms);
+    animation-duration: var(--in-dur);
+    animation-timing-function: var(--m-ease-out);
     animation-fill-mode: both;
   }
 
   .screen-leave-active .m {
-    animation-duration: var(--m-out);
+    animation-delay: var(--out-at, 0ms);
+    animation-duration: var(--out-dur);
     animation-timing-function: var(--m-ease-in);
-    animation-delay: calc(var(--x, 0) * var(--m-stagger-out));
     animation-fill-mode: both;
   }
 
-  .screen-enter-active .m-drop { animation-name: m-drop-in; }
+  /* Typing: one step per character, so letters appear one at a time. */
+  .screen-enter-active .m-type,
+  .screen-leave-active .m-type {
+    animation-name: m-type;
+    animation-timing-function: steps(var(--n, 1), jump-end);
+  }
+
+  /* Erasing starts at the left, like the reference: flip the mask halves. */
+  .screen-leave-active .m-type {
+    -webkit-mask-image: linear-gradient(90deg, transparent calc(50% - var(--m-type-soft)), #000 calc(50% + var(--m-type-soft)));
+    mask-image: linear-gradient(90deg, transparent calc(50% - var(--m-type-soft)), #000 calc(50% + var(--m-type-soft)));
+  }
+
+  /* Left before the headline finished typing: drop the lines instead of erasing text that never appeared. */
+  .welcome-screen.screen-leave-active:not(.is-settled) .m-type { animation-name: m-gone; }
+
   .screen-enter-active .m-pop { animation-name: m-pop-in; }
-  .screen-enter-active .m-left { animation-name: m-left-in; animation-timing-function: var(--m-ease-slide); }
-  .screen-enter-active .m-right { animation-name: m-right-in; animation-timing-function: var(--m-ease-slide); }
-  .screen-enter-active .m-rise { animation-name: m-rise-in; }
-  .screen-enter-active .m-zoom { animation-name: m-zoom-in; }
-
-  .screen-leave-active .m-drop { animation-name: m-lift-out; }
   .screen-leave-active .m-pop { animation-name: m-pop-out; }
-  .screen-leave-active .m-left { animation-name: m-left-out; }
-  .screen-leave-active .m-right { animation-name: m-right-out; }
-  .screen-leave-active .m-rise { animation-name: m-sink-out; }
-  .screen-leave-active .m-zoom { animation-name: m-lift-out; }
 
-  /* Signing → thanks: the pad lifts away, as if the signature was sent. */
-  .stage[data-screen="thanks"] .screen-leave-active .m-rise { animation-name: m-sent-out; }
+  /* Food photos travel as one strip: in from the left, out to the right. */
+  .screen-enter-active .m-strip { animation-name: m-strip-in; }
+  .screen-leave-active .m-strip { animation-name: m-strip-out; }
+
+  /* Signature box: a vertical line that grows, then opens sideways; reversed on the way out. */
+  .screen-enter-active .m-line { animation-name: m-line-in; animation-timing-function: linear; }
+  .screen-leave-active .m-line { animation-name: m-line-out; animation-timing-function: linear; }
 
   /* Attract mode (welcome, idle, after its enter animation). */
   .welcome-screen.is-attracting .welcome-screen__button-art {
-    animation: m-attract-pulse var(--m-attract-pulse-period) ease-in-out infinite;
+    animation: m-attract-wiggle var(--m-attract-period) ease-in-out infinite;
   }
 
-  .welcome-screen.is-attracting .welcome-screen__food-left img {
-    animation: m-attract-float var(--m-attract-float-period) ease-in-out infinite;
+  .welcome-screen.is-attracting .typed-image__flash {
+    animation: m-attract-flash var(--m-attract-period) steps(1, jump-end) infinite;
   }
 
   .welcome-screen__button.is-pressed .welcome-screen__button-art {
@@ -135,43 +176,26 @@
   to { opacity: 0; }
 }
 
-@keyframes m-drop-in {
-  from { opacity: 0; transform: translateY(calc(var(--m-drop) * -1)); }
-  35% { opacity: 1; }
-  to { opacity: 1; transform: none; }
+@keyframes m-gone {
+  from, to { opacity: 0; }
 }
 
+@keyframes m-footer-rise {
+  from { transform: translateY(284px); }
+  to { transform: none; }
+}
+
+@keyframes m-type {
+  from { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  to { -webkit-mask-position: 0 0; mask-position: 0 0; }
+}
+
+/* `visibility` keeps a not-yet-visible button from catching taps during its delay. */
 @keyframes m-pop-in {
-  from { opacity: 0; transform: scale(var(--m-pop-scale)); }
-  35% { opacity: 1; }
-  to { opacity: 1; transform: none; }
-}
-
-@keyframes m-zoom-in {
-  from { opacity: 0; transform: scale(var(--m-zoom-scale)); }
-  35% { opacity: 1; }
-  to { opacity: 1; transform: none; }
-}
-
-@keyframes m-rise-in {
-  from { opacity: 0; transform: translateY(var(--m-rise)); }
-  35% { opacity: 1; }
-  to { opacity: 1; transform: none; }
-}
-
-@keyframes m-left-in {
-  from { opacity: 0; transform: translateX(calc(var(--m-slide) * -1)); }
-  to { opacity: 1; transform: none; }
-}
-
-@keyframes m-right-in {
-  from { opacity: 0; transform: translateX(var(--m-slide)); }
-  to { opacity: 1; transform: none; }
-}
-
-@keyframes m-lift-out {
-  from { opacity: 1; transform: none; }
-  to { opacity: 0; transform: translateY(calc(var(--m-drop) * -1)); }
+  from { visibility: hidden; opacity: 0; transform: scale(var(--m-pop-scale)); }
+  1% { visibility: visible; }
+  40% { opacity: 1; }
+  to { visibility: visible; opacity: 1; transform: none; }
 }
 
 @keyframes m-pop-out {
@@ -179,33 +203,54 @@
   to { opacity: 0; transform: scale(var(--m-pop-scale)); }
 }
 
-@keyframes m-left-out {
-  from { opacity: 1; transform: none; }
-  to { opacity: 0; transform: translateX(calc(var(--m-slide) * -1)); }
+@keyframes m-strip-in {
+  from { transform: translateX(-100%); }
+  to { transform: none; }
 }
 
-@keyframes m-right-out {
-  from { opacity: 1; transform: none; }
-  to { opacity: 0; transform: translateX(var(--m-slide)); }
+@keyframes m-strip-out {
+  from { transform: none; }
+  to { transform: translateX(100%); }
 }
 
-@keyframes m-sink-out {
-  from { opacity: 1; transform: none; }
-  to { opacity: 0; transform: translateY(var(--m-rise)); }
+@keyframes m-line-in {
+  from {
+    visibility: hidden;
+    transform: scale(var(--m-line-width), 0);
+    animation-timing-function: var(--m-ease-in-out);
+  }
+  1% { visibility: visible; }
+  40% {
+    transform: scale(var(--m-line-width), 1);
+    animation-timing-function: var(--m-ease-out);
+  }
+  to { visibility: visible; transform: none; }
 }
 
-@keyframes m-sent-out {
-  from { opacity: 1; transform: none; }
-  to { opacity: 0; transform: translateY(calc(var(--m-rise) * -1)) scale(var(--m-sent-scale)); }
+@keyframes m-line-out {
+  from {
+    transform: none;
+    animation-timing-function: var(--m-ease-in-out);
+  }
+  55% {
+    transform: scale(var(--m-line-width), 1);
+    animation-timing-function: var(--m-ease-in);
+  }
+  to { transform: scale(var(--m-line-width), 0); }
 }
 
-@keyframes m-attract-pulse {
-  0%, 76%, 100% { transform: none; }
-  84% { transform: scale(var(--m-pulse-scale)); }
-  92% { transform: scale(0.99); }
+/* A short shake every cycle, then still — draws the eye without looking broken. */
+@keyframes m-attract-wiggle {
+  0%, 62%, 100% { transform: none; }
+  68% { transform: rotate(-2deg); }
+  74% { transform: rotate(2deg); }
+  80% { transform: rotate(-1.2deg); }
+  86% { transform: rotate(0.6deg); }
 }
 
-@keyframes m-attract-float {
-  0%, 100% { transform: none; }
-  50% { transform: translateY(calc(var(--m-float) * -1)); }
+/* "FRANGO COM CATUPIRY" blinks white, as in the reference. */
+@keyframes m-attract-flash {
+  0% { opacity: 0; }
+  55% { opacity: 1; }
+  78% { opacity: 0; }
 }

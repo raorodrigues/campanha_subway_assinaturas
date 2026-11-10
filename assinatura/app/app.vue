@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { TypedImageLine } from '~/components/TypedImage.vue'
+
 type KioskScreen = 'welcome' | 'signing' | 'thanks'
 type Timer = ReturnType<typeof setTimeout>
 
@@ -28,6 +30,19 @@ const KIOSK_IMAGES = [
   '/images/texto-obrigado.webp',
 ] as const
 
+// Line boxes measured on the artwork (alpha bounds); chars include spaces.
+const WELCOME_LINES: TypedImageLine[] = [
+  { x: 5, y: 0, width: 829, height: 113, chars: 12, flashFrom: 357 }, // ELEJA FRANGO
+  { x: 3, y: 128, width: 921, height: 113, chars: 13, flashFrom: 3 }, // COM CATUPIRY®
+  { x: 5, y: 256, width: 737, height: 113, chars: 10 }, // PATRIMONIO
+  { x: 0, y: 383, width: 487, height: 113, chars: 7 }, // AFETIVO
+  { x: 5, y: 511, width: 689, height: 113, chars: 10 }, // BRASILEIRO
+]
+const THANK_YOU_LINES: TypedImageLine[] = [
+  { x: 0, y: 0, width: 846, height: 120, chars: 13 }, // OBRIGADO PELA
+  { x: 19, y: 120, width: 807, height: 129, chars: 13 }, // PARTICIPAÇÃO.
+]
+
 if (!Number.isSafeInteger(signatureCountdownSeconds) || signatureCountdownSeconds < 1) {
   throw new Error('NUXT_PUBLIC_SIGNATURE_COUNTDOWN_SECONDS must be a positive integer.')
 }
@@ -41,8 +56,12 @@ useHead({
 })
 
 const screen = ref<KioskScreen>('welcome')
+// False until hydration: hides the server-rendered welcome so it can play its entrance.
+const isReady = ref(false)
 const isTransitioning = ref(false)
 const isAttracting = ref(false)
+// True once the welcome headline has finished typing; a leave before that drops the text instead of erasing it.
+const isWelcomeSettled = ref(false)
 const isSigningActive = ref(false)
 const isSubmitting = ref(false)
 const submissionError = ref('')
@@ -90,25 +109,25 @@ function preloadImages() {
 
 /* ----------------------------- Screen transitions ----------------------------- */
 
+// Taps are blocked only while a screen leaves. During an enter, objects that are not
+// visible yet are `visibility: hidden` (motion.css), so the welcome button works as soon as it shows.
 function onScreenBeforeLeave() {
   isTransitioning.value = true
   isAttracting.value = false
   isSigningActive.value = false
 }
 
-function onScreenBeforeEnter() {
-  isTransitioning.value = true
+function onScreenAfterLeave() {
+  isTransitioning.value = false
+  isWelcomeSettled.value = false
 }
 
 function onScreenAfterEnter() {
-  isTransitioning.value = false
-  if (screen.value === 'welcome') isAttracting.value = true
-  else if (screen.value === 'signing') isSigningActive.value = true
+  if (screen.value === 'welcome') {
+    isWelcomeSettled.value = true
+    isAttracting.value = true
+  } else if (screen.value === 'signing') isSigningActive.value = true
   else startThankYouTimer()
-}
-
-function onScreenEnterCancelled() {
-  isTransitioning.value = false
 }
 
 function startThankYouTimer() {
@@ -232,8 +251,8 @@ onMounted(() => {
   document.addEventListener('contextmenu', blockContextMenu)
   window.addEventListener('wheel', blockZoomWheel, { passive: false })
   preloadImages()
-  // The first welcome is server-rendered without an enter animation, so it is idle right away.
-  if (screen.value === 'welcome') isAttracting.value = true
+  // The first welcome plays its entrance through <Transition appear>; its after-enter starts attract mode.
+  isReady.value = true
 })
 
 onBeforeUnmount(() => {
@@ -248,36 +267,38 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="kiosk" :style="{ '--kiosk-scale': kioskScale }">
+  <main class="kiosk" :class="{ 'is-ready': isReady }" :style="{ '--kiosk-scale': kioskScale }">
     <NuxtRouteAnnouncer />
 
     <!-- Shared by every screen; never part of a transition. -->
-    <img class="screen-background" src="/images/bg.webp" alt="" draggable="false">
+    <WaveBackground />
+    <!-- Only the white Subway footer of bg.webp shows; it rises once when the page boots. -->
+    <img class="screen-footer" src="/images/bg.webp" alt="" draggable="false">
 
     <div class="stage" :class="{ 'is-transitioning': isTransitioning }" :data-screen="screen">
       <Transition
         name="screen"
         mode="out-in"
+        appear
         @before-leave="onScreenBeforeLeave"
-        @before-enter="onScreenBeforeEnter"
+        @after-leave="onScreenAfterLeave"
         @after-enter="onScreenAfterEnter"
-        @enter-cancelled="onScreenEnterCancelled"
       >
         <section
           v-if="screen === 'welcome'"
           key="welcome"
           class="screen welcome-screen"
-          :class="{ 'is-attracting': isAttracting }"
+          :class="{ 'is-attracting': isAttracting, 'is-settled': isWelcomeSettled }"
           aria-labelledby="welcome-title"
         >
           <h1 id="welcome-title" class="visually-hidden">Eleja frango com Catupiry, patrimônio afetivo brasileiro</h1>
-          <img
-            class="welcome-screen__headline m m-drop"
+          <TypedImage
+            class="welcome-screen__headline"
             src="/images/texto-eleja.webp"
-            alt=""
-            aria-hidden="true"
-            draggable="false"
-          >
+            :width="924"
+            :height="624"
+            :lines="WELCOME_LINES"
+          />
 
           <button
             class="welcome-screen__button m m-pop"
@@ -296,11 +317,11 @@ onBeforeUnmount(() => {
             </span>
           </button>
 
-          <div class="welcome-screen__food" aria-hidden="true">
-            <div class="welcome-screen__food-left m m-left">
+          <div class="welcome-screen__food m m-strip" aria-hidden="true">
+            <div class="welcome-screen__food-left">
               <img src="/images/lanche.webp" alt="" draggable="false">
             </div>
-            <img class="welcome-screen__food-right m m-right" src="/images/foto-direita.webp" alt="" draggable="false">
+            <img class="welcome-screen__food-right" src="/images/foto-direita.webp" alt="" draggable="false">
           </div>
         </section>
 
@@ -317,12 +338,14 @@ onBeforeUnmount(() => {
         />
 
         <section v-else key="thanks" class="screen thank-you-screen" aria-label="Agradecimento">
-          <img
-            class="thank-you-screen__message m m-zoom"
+          <p class="visually-hidden">Obrigado pela participação.</p>
+          <TypedImage
+            class="thank-you-screen__message"
             src="/images/texto-obrigado.webp"
-            alt="Obrigado pela participação."
-            draggable="false"
-          >
+            :width="846"
+            :height="249"
+            :lines="THANK_YOU_LINES"
+          />
         </section>
       </Transition>
     </div>
@@ -396,7 +419,7 @@ button {
   inset: 0;
 }
 
-/* Taps are ignored while a screen change is animating. */
+/* Taps are ignored while a screen leaves (see onScreenBeforeLeave). */
 .stage.is-transitioning {
   pointer-events: none;
 }
@@ -409,11 +432,17 @@ button {
   inset: 0;
 }
 
-.screen-background {
+.screen-footer {
   position: absolute;
   width: 1080px;
   height: 1920px;
   inset: 0;
+  clip-path: inset(1636px 0 0 0);
+}
+
+/* Before hydration: no screen yet, footer below the edge (see motion.css for the boot animation). */
+.kiosk:not(.is-ready) .stage {
+  opacity: 0;
 }
 
 .visually-hidden {
