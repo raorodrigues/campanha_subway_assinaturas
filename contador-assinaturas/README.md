@@ -136,6 +136,17 @@ ou configure `SIGNATURE_DB_PATH` com um caminho absoluto persistente.
 
 Para uso definitivo no totem, use PM2 conforme a secao abaixo.
 
+## Quiosque Windows (recomendado)
+
+Para o totem Windows offline com duas telas, use o kit em
+[`kiosk-windows/`](../kiosk-windows/README.md): pacote com Node portatil,
+inicializacao automatica, navegador em tela cheia por tela e checklist do
+equipamento. Ele substitui o PM2 no Windows.
+
+Nas configuracoes PM2 abaixo os servidores escutam somente em `127.0.0.1`
+(este computador). Para acessar de outro dispositivo da rede, defina
+`HOST=0.0.0.0` antes de `npm run pm2:start`.
+
 ## Operacao com PM2
 
 Este projeto possui `ecosystem.config.cjs`, com porta 3001, diretorio de trabalho

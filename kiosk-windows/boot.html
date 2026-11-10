@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Iniciando</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #00843d;
+      color: #fff;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      user-select: none;
+      cursor: none;
+    }
+    body {
+      display: grid;
+      place-items: center;
+    }
+    p {
+      margin: 0;
+      font-size: 28px;
+      opacity: 0.85;
+    }
+    .dot {
+      display: inline-block;
+      animation: blink 1.4s infinite both;
+    }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0.2; }
+      40% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <p>Iniciando<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></p>
+  <script>
+    // Opened by start-kiosk.ps1 as file:///.../boot.html?target=http://127.0.0.1:3000/
+    // Waits until the local server answers, then opens the app. The browser never
+    // shows a "site can't be reached" page while Node is still starting.
+    (function () {
+      var target = new URLSearchParams(location.search).get('target')
+      if (!target || !/^http:\/\/127\.0\.0\.1:\d+\/$/.test(target)) {
+        document.querySelector('p').textContent = 'Endereço inválido em boot.html'
+        return
+      }
+
+      function probe() {
+        var image = new Image()
+        var settled = false
+        var timer = setTimeout(function () { finish(false) }, 3000)
+        function finish(ok) {
+          if (settled) return
+          settled = true
+          clearTimeout(timer)
+          if (ok) location.replace(target)
+          else setTimeout(probe, 1000)
+        }
+        // favicon.ico exists in both apps; any successful load means Node is serving.
+        image.onload = function () { finish(true) }
+        image.onerror = function () { finish(false) }
+        image.src = target + 'favicon.ico?boot=' + Date.now()
+      }
+
+      probe()
+    })()
+  </script>
+</body>
+</html>

@@ -229,6 +229,17 @@ manter o banco separado das atualizacoes.
 Para operacao definitiva, use a configuracao PM2 abaixo em vez dos terminais
 com `npm run preview`.
 
+## Quiosque Windows (recomendado)
+
+Para o totem Windows offline com duas telas, use o kit em
+[`kiosk-windows/`](../kiosk-windows/README.md): pacote com Node portatil,
+inicializacao automatica, navegador em tela cheia por tela e checklist do
+equipamento. Ele substitui o PM2 no Windows.
+
+Nas configuracoes PM2 abaixo os servidores escutam somente em `127.0.0.1`
+(este computador). Para acessar de outro dispositivo da rede, defina
+`HOST=0.0.0.0` antes de `npm run pm2:start`.
+
 ## Operacao com PM2
 
 Os dois projetos possuem `ecosystem.config.cjs` e comandos npm para PM2.
