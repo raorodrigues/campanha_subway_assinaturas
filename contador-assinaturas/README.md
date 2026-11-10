@@ -3,6 +3,18 @@
 Aplicacao Nuxt que exibe apenas a quantidade de assinaturas do projeto
 [assinatura](../assinatura). Nao acessa o SQLite nem recebe desenhos.
 
+## Painel LED
+
+A pagina renderiza em 384×192 px (resolucao do painel), fixa no canto superior
+esquerdo, reproduzindo `painel-led-contador-384x192px.mp4`: fundo de ondas em
+movimento, numero com animacao de odometro e "JÁ ASSINARAM". A fonte (Anton) e
+servida localmente, sem dependencia de rede.
+
+- `http://localhost:3001/?demo` simula novas assinaturas, para conferir o painel
+  sem o servidor de assinatura.
+- Um ponto de 4 px no canto inferior direito indica o estado da conexao:
+  branco ao conectar, vermelho quando o servidor de assinatura nao responde.
+
 ## Desenvolvimento local
 
 Use Node.js 22.22.3+, 24.15.0+ ou 26+.
