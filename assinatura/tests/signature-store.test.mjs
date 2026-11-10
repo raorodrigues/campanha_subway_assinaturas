@@ -15,12 +15,14 @@ function runStore(databasePath, id) {
     '--input-type=module',
     '-e',
     `import { getSignatureCount, recordSignature } from ${JSON.stringify(storeUrl)};
-     console.log(JSON.stringify(${operation}));`,
+     console.log(JSON.stringify(await ${operation}));`,
   ], {
     env: { ...process.env, SIGNATURE_DB_PATH: databasePath },
     encoding: 'utf8',
   })
   assert.equal(result.status, 0, result.stderr)
+  // `nuxt dev` prints this Node 22 warning as an ERROR line; the store must silence it.
+  assert.doesNotMatch(result.stderr, /SQLite is an experimental feature/)
   return JSON.parse(result.stdout)
 }
 

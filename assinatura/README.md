@@ -98,7 +98,8 @@ rebuilding preserves it; deleting the database does not.
 
 This feature requires a Node server with a writable, persistent filesystem.
 Static hosting (`npm run generate`) cannot provide these endpoints. Built-in
-`node:sqlite` can print an experimental warning on Node 22.
+`node:sqlite` requires Node 22+; its experimental warning on Node 22 is
+silenced by `server/utils/signature-store.ts`.
 Run `npm test`, `npm run typecheck` and `npm run build` to validate changes.
 
 ## Production
