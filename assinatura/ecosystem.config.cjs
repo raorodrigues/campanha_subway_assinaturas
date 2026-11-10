@@ -15,7 +15,8 @@ module.exports = {
     time: true,
     env: {
       NODE_ENV: 'production',
-      HOST: '0.0.0.0',
+      // Localhost only: both screens run on this PC. Set HOST=0.0.0.0 to expose on the LAN.
+      HOST: process.env.HOST || '127.0.0.1',
       PORT: '3000',
       SIGNATURE_DB_PATH: process.env.SIGNATURE_DB_PATH || resolve(__dirname, '.data/signatures.sqlite'),
       NUXT_PUBLIC_SIGNATURE_COUNTDOWN_SECONDS: process.env.NUXT_PUBLIC_SIGNATURE_COUNTDOWN_SECONDS || '10',

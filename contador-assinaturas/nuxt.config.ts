@@ -2,7 +2,12 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+  app: {
+    head: {
+      htmlAttrs: { lang: 'pt-BR' },
+    },
+  },
   runtimeConfig: {
-    signatureApiBase: 'http://localhost:3000',
+    signatureApiBase: 'http://127.0.0.1:3000',
   },
 })

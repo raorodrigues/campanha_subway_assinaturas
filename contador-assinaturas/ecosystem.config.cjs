@@ -13,9 +13,10 @@ module.exports = {
     time: true,
     env: {
       NODE_ENV: 'production',
-      HOST: '0.0.0.0',
+      // Localhost only: both screens run on this PC. Set HOST=0.0.0.0 to expose on the LAN.
+      HOST: process.env.HOST || '127.0.0.1',
       PORT: '3001',
-      NUXT_SIGNATURE_API_BASE: process.env.NUXT_SIGNATURE_API_BASE || 'http://localhost:3000',
+      NUXT_SIGNATURE_API_BASE: process.env.NUXT_SIGNATURE_API_BASE || 'http://127.0.0.1:3000',
     },
   }],
 }

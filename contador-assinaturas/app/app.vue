@@ -26,8 +26,23 @@ async function refreshCount() {
   }
 }
 
-onMounted(refreshCount)
+// Display-only kiosk screen: no long-press menu or Ctrl+wheel/pinch zoom.
+function blockContextMenu(event: Event) {
+  event.preventDefault()
+}
+
+function blockZoomWheel(event: WheelEvent) {
+  if (event.ctrlKey) event.preventDefault()
+}
+
+onMounted(() => {
+  document.addEventListener('contextmenu', blockContextMenu)
+  window.addEventListener('wheel', blockZoomWheel, { passive: false })
+  void refreshCount()
+})
 onBeforeUnmount(() => {
+  document.removeEventListener('contextmenu', blockContextMenu)
+  window.removeEventListener('wheel', blockZoomWheel)
   disposed = true
   clearTimeout(refreshTimer)
   controller?.abort()
@@ -61,6 +76,15 @@ onBeforeUnmount(() => {
 
 * {
   box-sizing: border-box;
+  touch-action: pan-x pan-y;
+}
+
+html,
+body {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  overscroll-behavior: none;
 }
 
 body {

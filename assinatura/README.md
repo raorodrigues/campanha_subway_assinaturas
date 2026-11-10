@@ -98,7 +98,8 @@ rebuilding preserves it; deleting the database does not.
 
 This feature requires a Node server with a writable, persistent filesystem.
 Static hosting (`npm run generate`) cannot provide these endpoints. Built-in
-`node:sqlite` can print an experimental warning on Node 22.
+`node:sqlite` requires Node 22+; its experimental warning on Node 22 is
+silenced by `server/utils/signature-store.ts`.
 Run `npm test`, `npm run typecheck` and `npm run build` to validate changes.
 
 ## Production
@@ -227,6 +228,17 @@ manter o banco separado das atualizacoes.
 
 Para operacao definitiva, use a configuracao PM2 abaixo em vez dos terminais
 com `npm run preview`.
+
+## Quiosque Windows (recomendado)
+
+Para o totem Windows offline com duas telas, use o kit em
+[`kiosk-windows/`](../kiosk-windows/README.md): pacote com Node portatil,
+inicializacao automatica, navegador em tela cheia por tela e checklist do
+equipamento. Ele substitui o PM2 no Windows.
+
+Nas configuracoes PM2 abaixo os servidores escutam somente em `127.0.0.1`
+(este computador). Para acessar de outro dispositivo da rede, defina
+`HOST=0.0.0.0` antes de `npm run pm2:start`.
 
 ## Operacao com PM2
 
