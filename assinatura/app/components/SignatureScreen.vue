@@ -8,7 +8,8 @@ interface SignaturePoint {
 type SignatureStroke = SignaturePoint[]
 
 const props = defineProps<{
-  open: boolean
+  /** True once the enter animation has settled; countdowns and input start only then. */
+  active: boolean
   submitting: boolean
   error: string
   durationSeconds: number
@@ -21,7 +22,7 @@ const emit = defineEmits<{
 }>()
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
-const dialogRef = ref<HTMLElement | null>(null)
+const rootRef = ref<HTMLElement | null>(null)
 const hasSignature = ref(false)
 const isDrawing = ref(false)
 const remainingSeconds = ref(props.durationSeconds)
@@ -53,7 +54,7 @@ function resizeCanvas() {
   if (!canvas) return
 
   const pixelRatio = window.devicePixelRatio || 1
-  // Layout size ignores the preview scale applied to the kiosk canvas.
+  // Layout size ignores the preview scale and the enter-animation transforms.
   canvasWidth = canvas.clientWidth
   canvasHeight = canvas.clientHeight
   canvas.width = Math.round(canvasWidth * pixelRatio)
@@ -112,7 +113,7 @@ function drawFrame(now: number) {
   if (isDrawing.value || hasVisibleTrail) requestDraw()
 }
 
-function getPoint(event: PointerEvent): SignaturePoint & { time: number } {
+function getPoint(event: PointerEvent): SignaturePoint {
   const canvas = canvasRef.value
   if (!canvas) throw new Error('Signature canvas is unavailable')
 
@@ -125,7 +126,7 @@ function getPoint(event: PointerEvent): SignaturePoint & { time: number } {
 }
 
 function startDrawing(event: PointerEvent) {
-  if (props.submitting || completionRequested || expired.value || event.button !== 0 ||
+  if (!props.active || props.submitting || completionRequested || expired.value || event.button !== 0 ||
     activePointerId !== null || !event.isPrimary) return
   event.preventDefault()
 
@@ -219,109 +220,104 @@ function handleKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') close()
 }
 
-watch(
-  () => props.open,
-  async (open) => {
-    if (!open) {
-      stopTimer()
-      resizeObserver?.disconnect()
-      resizeObserver = null
-      window.removeEventListener('keydown', handleKeydown)
-      clearSignature()
-      hasStartedSigning.value = false
-      return
-    }
+function startSession() {
+  completionRequested = false
+  expired.value = false
+  hasStartedSigning.value = false
+  remainingSeconds.value = props.durationSeconds
+  idleRemainingSeconds.value = props.idleTimeoutSeconds
+  deadline = Date.now() + props.durationSeconds * 1000
+  idleDeadline = Date.now() + props.idleTimeoutSeconds * 1000
+  stopTimer()
+  timerId = setInterval(updateCountdown, 100)
+  window.addEventListener('keydown', handleKeydown)
+  rootRef.value?.focus({ preventScroll: true })
+}
 
-    completionRequested = false
-    expired.value = false
-    hasStartedSigning.value = false
-    remainingSeconds.value = props.durationSeconds
-    idleRemainingSeconds.value = props.idleTimeoutSeconds
-    deadline = Date.now() + props.durationSeconds * 1000
-    idleDeadline = Date.now() + props.idleTimeoutSeconds * 1000
-    timerId = setInterval(updateCountdown, 100)
-    await nextTick()
-    if (!props.open) return
-    resizeCanvas()
-    resizeObserver = new ResizeObserver(resizeCanvas)
-    if (canvasRef.value) resizeObserver.observe(canvasRef.value)
-    window.addEventListener('keydown', handleKeydown)
-    dialogRef.value?.focus()
+function suspendSession() {
+  stopTimer()
+  window.removeEventListener('keydown', handleKeydown)
+}
+
+watch(
+  () => props.active,
+  (active) => {
+    if (active) startSession()
+    else suspendSession()
   },
 )
 
+onMounted(() => {
+  resizeCanvas()
+  resizeObserver = new ResizeObserver(resizeCanvas)
+  if (canvasRef.value) resizeObserver.observe(canvasRef.value)
+  if (props.active) startSession()
+})
+
 onBeforeUnmount(() => {
-  stopTimer()
+  suspendSession()
   clearSignature()
   resizeObserver?.disconnect()
-  window.removeEventListener('keydown', handleKeydown)
-  if (frameId !== null) cancelAnimationFrame(frameId)
+  resizeObserver = null
 })
 </script>
 
 <template>
-  <Transition name="signature-modal">
-    <div v-if="open" class="signature-backdrop" @click.self="close">
-      <section
-        ref="dialogRef"
-        class="signature-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Tela para assinatura"
-        tabindex="-1"
-      >
-        <SignatureHandCue />
-        <img
-          class="signature-screen__instructions"
-          src="/images/texto-assinatura.webp"
-          alt="Use o dedo para escrever seu nome abaixo."
-        >
-
-        <div class="signature-pad">
-          <img class="signature-pad__frame" src="/images/box-assinatura.webp" alt="" aria-hidden="true">
-          <canvas
-            ref="canvasRef"
-            aria-label="Área para assinar usando o dedo ou uma caneta touch"
-            @pointerdown="startDrawing"
-            @pointermove="continueDrawing"
-            @pointerup="stopDrawing"
-            @pointercancel="stopDrawing"
-            @lostpointercapture="stopDrawing"
-          />
-          <span class="signature-modal__countdown" role="timer" aria-live="off">
-            {{ submitting ? 'Salvando…' : error ? 'Erro' : `${hasStartedSigning ? remainingSeconds : idleRemainingSeconds}s` }}
-          </span>
-          <div v-if="error" class="signature-modal__error">
-            <p role="alert">{{ error }}</p>
-            <button type="button" :disabled="submitting" @click="complete">
-              {{ submitting ? 'Salvando…' : 'Tentar novamente' }}
-            </button>
-          </div>
-        </div>
-      </section>
+  <section
+    ref="rootRef"
+    class="screen signing-screen"
+    aria-label="Tela para assinatura"
+    tabindex="-1"
+  >
+    <div class="signing-screen__hand m m-pop">
+      <SignatureHandCue />
     </div>
-  </Transition>
+
+    <img
+      class="signing-screen__instructions m m-drop"
+      src="/images/texto-assinatura.webp"
+      alt="Use o dedo para escrever seu nome abaixo."
+      draggable="false"
+    >
+
+    <div class="signing-screen__pad m m-rise">
+      <img class="signing-screen__pad-frame" src="/images/box-assinatura.webp" alt="" aria-hidden="true" draggable="false">
+      <canvas
+        ref="canvasRef"
+        aria-label="Área para assinar usando o dedo ou uma caneta touch"
+        @pointerdown="startDrawing"
+        @pointermove="continueDrawing"
+        @pointerup="stopDrawing"
+        @pointercancel="stopDrawing"
+        @lostpointercapture="stopDrawing"
+      />
+      <span class="signing-screen__countdown" role="timer" aria-live="off">
+        {{ submitting ? 'Salvando…' : error ? 'Erro' : `${hasStartedSigning ? remainingSeconds : idleRemainingSeconds}s` }}
+      </span>
+      <div v-if="error" class="signing-screen__error">
+        <p role="alert">{{ error }}</p>
+        <button type="button" :disabled="submitting" @click="complete">
+          {{ submitting ? 'Salvando…' : 'Tentar novamente' }}
+        </button>
+      </div>
+    </div>
+  </section>
 </template>
 
 <style scoped>
-.signature-backdrop {
-  position: fixed;
-  z-index: 10;
-  width: 1080px;
-  height: 1920px;
-  inset: 0;
-  overflow: hidden;
-  background: #00843d url("/images/bg.webp") center / 1080px 1920px no-repeat;
-}
-
-.signature-modal {
-  position: relative;
-  width: 1080px;
-  height: 1920px;
+.signing-screen {
   outline: none;
 }
 
-.signature-screen__instructions {
+/* Full-screen layer so the hand cue keeps its absolute position while this wrapper is transformed. */
+.signing-screen__hand {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-origin: 630px 525px;
+}
+
+.signing-screen__instructions {
   position: absolute;
   top: 720px;
   left: 176px;
@@ -329,7 +325,7 @@ onBeforeUnmount(() => {
   height: 143px;
 }
 
-.signature-pad {
+.signing-screen__pad {
   position: absolute;
   top: 908px;
   left: 92px;
@@ -337,7 +333,7 @@ onBeforeUnmount(() => {
   height: 288px;
 }
 
-.signature-pad__frame {
+.signing-screen__pad-frame {
   position: absolute;
   width: 897px;
   height: 288px;
@@ -345,7 +341,7 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
-.signature-pad canvas {
+.signing-screen__pad canvas {
   position: absolute;
   width: 100%;
   height: 100%;
@@ -355,17 +351,7 @@ onBeforeUnmount(() => {
   -webkit-tap-highlight-color: transparent;
 }
 
-.signature-modal-enter-active,
-.signature-modal-leave-active {
-  transition: opacity 360ms ease;
-}
-
-.signature-modal-enter-from,
-.signature-modal-leave-to {
-  opacity: 0;
-}
-
-.signature-modal__countdown {
+.signing-screen__countdown {
   position: absolute;
   z-index: 2;
   top: 18px;
@@ -385,7 +371,7 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
-.signature-modal__error {
+.signing-screen__error {
   position: absolute;
   z-index: 3;
   top: 78px;
@@ -405,11 +391,11 @@ onBeforeUnmount(() => {
   transform: translateX(-50%);
 }
 
-.signature-modal__error p {
+.signing-screen__error p {
   margin: 0;
 }
 
-.signature-modal__error button {
+.signing-screen__error button {
   min-height: 44px;
   padding: 0 18px;
   border: 0;
@@ -421,20 +407,13 @@ onBeforeUnmount(() => {
   font-weight: 700;
 }
 
-.signature-modal__error button:disabled {
+.signing-screen__error button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
 
-.signature-modal button:focus-visible {
+.signing-screen button:focus-visible {
   outline: 3px solid #f4dc18;
   outline-offset: 3px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .signature-modal-enter-active,
-  .signature-modal-leave-active {
-    transition-duration: 0.01ms;
-  }
 }
 </style>
