@@ -3,3 +3,6 @@
 /fatiado/
 /kiosk-windows/dist/
 /kiosk-windows/.cache/
+
+# Playwright MCP browser test output
+.playwright-mcp/
