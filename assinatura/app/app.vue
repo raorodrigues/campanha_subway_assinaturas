@@ -155,6 +155,9 @@ function releaseSignButton() {
   if (signButtonTimeout === null) isSignButtonPressed.value = false
 }
 
+// The whole welcome screen acts as the "Assine aqui" button: a tap anywhere
+// shows the pressed artwork and opens the signature screen. The button itself
+// stays focusable, and its keyboard click bubbles up to the same handler.
 function activateSignButton() {
   if (signButtonTimeout !== null || screen.value !== 'welcome') return
   isSignButtonPressed.value = true
@@ -290,6 +293,11 @@ onBeforeUnmount(() => {
           class="screen welcome-screen"
           :class="{ 'is-attracting': isAttracting, 'is-settled': isWelcomeSettled }"
           aria-labelledby="welcome-title"
+          @pointerdown="pressSignButton"
+          @pointerup="releaseSignButton"
+          @pointerleave="releaseSignButton"
+          @pointercancel="releaseSignButton"
+          @click="activateSignButton"
         >
           <h1 id="welcome-title" class="visually-hidden">Eleja frango com Catupiry, patrimônio afetivo brasileiro</h1>
           <TypedImage
@@ -305,11 +313,6 @@ onBeforeUnmount(() => {
             :class="{ 'is-pressed': isSignButtonPressed }"
             type="button"
             aria-label="Assine aqui"
-            @pointerdown="pressSignButton"
-            @pointerup="releaseSignButton"
-            @pointerleave="releaseSignButton"
-            @pointercancel="releaseSignButton"
-            @click="activateSignButton"
           >
             <span class="welcome-screen__button-art">
               <img class="welcome-screen__button-idle" src="/images/botao-assine-repouso.webp" alt="" draggable="false">
