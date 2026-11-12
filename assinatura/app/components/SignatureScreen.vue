@@ -83,57 +83,115 @@ function resizeCanvas() {
   }
 }
 
+const STROKE_COLOR = '#17684f'
+const STROKE_WIDTH = 3.5
+// The trail fades in this many opacity steps. Each step is one continuous
+// path, so the line has no overlapping joints (which showed up as dots).
+const FADE_STEPS = 24
+// Points closer than this (CSS px) add jitter instead of detail.
+const MIN_POINT_DISTANCE = 0.75
+
+interface CurvePiece {
+  from: { x: number, y: number }
+  control: { x: number, y: number } | null
+  to: { x: number, y: number }
+  time: number
+}
+
+function trailAlpha(now: number, time: number) {
+  return Math.max(0, 1 - (now - time) / TRAIL_DURATION)
+}
+
+// Smooths the sampled points with quadratic curves through their midpoints:
+// each piece ends where the next starts with the same tangent.
+function strokePieces(stroke: SignatureStroke): CurvePiece[] {
+  const points = stroke.map(point => ({ x: point.x * canvasWidth, y: point.y * canvasHeight }))
+  const mid = (a: { x: number, y: number }, b: { x: number, y: number }) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 })
+  const last = points.length - 1
+  const pieces: CurvePiece[] = [{ from: points[0]!, control: null, to: mid(points[0]!, points[1]!), time: stroke[1]!.time }]
+  for (let index = 1; index < last; index += 1) {
+    pieces.push({
+      from: mid(points[index - 1]!, points[index]!),
+      control: points[index]!,
+      to: mid(points[index]!, points[index + 1]!),
+      time: stroke[index]!.time,
+    })
+  }
+  pieces.push({ from: mid(points[last - 1]!, points[last]!), control: null, to: points[last]!, time: stroke[last]!.time })
+  return pieces
+}
+
+// Half-disc cap at a stroke end, flush with the butt end of the line.
+function drawCap(ctx: CanvasRenderingContext2D, at: { x: number, y: number }, towards: { x: number, y: number }) {
+  const angle = Math.atan2(at.y - towards.y, at.x - towards.x)
+  ctx.beginPath()
+  ctx.arc(at.x, at.y, STROKE_WIDTH / 2, angle - Math.PI / 2, angle + Math.PI / 2)
+  ctx.fill()
+}
+
+function drawStroke(ctx: CanvasRenderingContext2D, stroke: SignatureStroke, now: number) {
+  if (stroke.length === 1) {
+    const point = stroke[0]!
+    const alpha = trailAlpha(now, point.time)
+    if (alpha <= 0) return false
+    ctx.globalAlpha = alpha
+    ctx.beginPath()
+    ctx.arc(point.x * canvasWidth, point.y * canvasHeight, STROKE_WIDTH / 2, 0, Math.PI * 2)
+    ctx.fill()
+    return true
+  }
+
+  const pieces = strokePieces(stroke)
+  let visible = false
+  let index = 0
+  while (index < pieces.length) {
+    const step = Math.ceil(trailAlpha(now, pieces[index]!.time) * FADE_STEPS)
+    let end = index
+    while (end + 1 < pieces.length && Math.ceil(trailAlpha(now, pieces[end + 1]!.time) * FADE_STEPS) === step) end += 1
+
+    if (step > 0) {
+      visible = true
+      ctx.globalAlpha = step / FADE_STEPS
+      ctx.beginPath()
+      ctx.moveTo(pieces[index]!.from.x, pieces[index]!.from.y)
+      for (let piece = index; piece <= end; piece += 1) {
+        const { control, to } = pieces[piece]!
+        if (control) ctx.quadraticCurveTo(control.x, control.y, to.x, to.y)
+        else ctx.lineTo(to.x, to.y)
+      }
+      ctx.stroke()
+      if (index === 0) drawCap(ctx, pieces[0]!.from, pieces[0]!.to)
+      if (end === pieces.length - 1) drawCap(ctx, pieces[end]!.to, pieces[end]!.control ?? pieces[end]!.from)
+    }
+    index = end + 1
+  }
+  return visible
+}
+
 function drawFrame(now: number) {
   frameId = null
   const ctx = context
   if (!ctx) return
 
   ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+  ctx.strokeStyle = STROKE_COLOR
+  ctx.fillStyle = STROKE_COLOR
+  ctx.lineWidth = STROKE_WIDTH
+  ctx.lineCap = 'butt'
+  ctx.lineJoin = 'round'
+
   let hasVisibleTrail = false
-
   for (const stroke of strokes) {
-    if (stroke.length === 1) {
-      const point = stroke[0]!
-      const age = now - point.time
-      if (age < TRAIL_DURATION) {
-        ctx.globalAlpha = 1 - age / TRAIL_DURATION
-        ctx.fillStyle = '#17684f'
-        ctx.beginPath()
-        ctx.arc(point.x * canvasWidth, point.y * canvasHeight, 2.2, 0, Math.PI * 2)
-        ctx.fill()
-        hasVisibleTrail = true
-      }
-      continue
-    }
-
-    for (let index = 1; index < stroke.length; index += 1) {
-      const from = stroke[index - 1]!
-      const to = stroke[index]!
-      const age = now - to.time
-      if (age >= TRAIL_DURATION) continue
-
-      ctx.globalAlpha = 1 - age / TRAIL_DURATION
-      ctx.strokeStyle = '#17684f'
-      ctx.lineWidth = 3.5
-      ctx.lineCap = 'round'
-      ctx.lineJoin = 'round'
-      ctx.beginPath()
-      ctx.moveTo(from.x * canvasWidth, from.y * canvasHeight)
-      ctx.lineTo(to.x * canvasWidth, to.y * canvasHeight)
-      ctx.stroke()
-      hasVisibleTrail = true
-    }
+    if (drawStroke(ctx, stroke, now)) hasVisibleTrail = true
   }
 
   ctx.globalAlpha = 1
   if (isDrawing.value || hasVisibleTrail) requestDraw()
 }
 
-function getPoint(event: PointerEvent): SignaturePoint {
-  const canvas = canvasRef.value
-  if (!canvas) throw new Error('Signature canvas is unavailable')
+function getPoint(event: PointerEvent, rect = canvasRef.value?.getBoundingClientRect()): SignaturePoint {
+  if (!rect) throw new Error('Signature canvas is unavailable')
 
-  const rect = canvas.getBoundingClientRect()
   return {
     x: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)),
     y: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height)),
@@ -164,7 +222,16 @@ function continueDrawing(event: PointerEvent) {
   event.preventDefault()
 
   const currentStroke = strokes[strokes.length - 1]!
-  currentStroke.push(getPoint(event))
+  const rect = canvasRef.value?.getBoundingClientRect()
+  // Coalesced events carry every sample the screen reported since the last
+  // frame, so fast curves keep their shape instead of turning into corners.
+  const samples = event.getCoalescedEvents?.() ?? []
+  for (const sample of samples.length ? samples : [event]) {
+    const point = getPoint(sample, rect)
+    const previous = currentStroke[currentStroke.length - 1]!
+    const distance = Math.hypot((point.x - previous.x) * canvasWidth, (point.y - previous.y) * canvasHeight)
+    if (distance >= MIN_POINT_DISTANCE) currentStroke.push(point)
+  }
   requestDraw()
 }
 
