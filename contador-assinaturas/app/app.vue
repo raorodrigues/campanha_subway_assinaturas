@@ -25,6 +25,16 @@ async function refreshCount() {
   }
 }
 
+// The panel is designed at 384×192 and scaled to fill the display while
+// keeping its 2:1 ratio; any leftover area stays black (letterbox).
+const PANEL_WIDTH = 384
+const PANEL_HEIGHT = 192
+const panelScale = ref(1)
+
+function fitPanel() {
+  panelScale.value = Math.min(window.innerWidth / PANEL_WIDTH, window.innerHeight / PANEL_HEIGHT)
+}
+
 // Display-only kiosk screen: no long-press menu or Ctrl+wheel/pinch zoom.
 function blockContextMenu(event: Event) {
   event.preventDefault()
@@ -42,12 +52,15 @@ function runDemo() {
 }
 
 onMounted(() => {
+  fitPanel()
+  window.addEventListener('resize', fitPanel)
   document.addEventListener('contextmenu', blockContextMenu)
   window.addEventListener('wheel', blockZoomWheel, { passive: false })
   if (new URLSearchParams(window.location.search).has('demo')) runDemo()
   else void refreshCount()
 })
 onBeforeUnmount(() => {
+  window.removeEventListener('resize', fitPanel)
   document.removeEventListener('contextmenu', blockContextMenu)
   window.removeEventListener('wheel', blockZoomWheel)
   disposed = true
@@ -57,25 +70,27 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="led-panel">
-    <NuxtRouteAnnouncer />
-    <WaveBackground />
-    <section class="led-content" aria-labelledby="counter-title">
-      <p class="counter-total" aria-live="off">
-        <OdometerNumber v-if="total !== null" :value="total" />
+  <div class="led-stage">
+    <main class="led-panel" :style="{ '--panel-scale': panelScale }">
+      <NuxtRouteAnnouncer />
+      <WaveBackground />
+      <section class="led-content" aria-labelledby="counter-title">
+        <p class="counter-total" aria-live="off">
+          <OdometerNumber v-if="total !== null" :value="total" />
+        </p>
+        <h1 id="counter-title" class="counter-caption">Já assinaram</h1>
+      </section>
+      <p v-if="connectionError || total === null" class="connection-status" :class="{ 'is-error': connectionError }" role="status">
+        <span class="visually-hidden">
+          {{ connectionError
+            ? (total === null
+              ? 'Não foi possível conectar ao servidor de assinaturas.'
+              : 'Conexão interrompida. Exibindo a última contagem recebida.')
+            : 'Conectando…' }}
+        </span>
       </p>
-      <h1 id="counter-title" class="counter-caption">Já assinaram</h1>
-    </section>
-    <p v-if="connectionError || total === null" class="connection-status" :class="{ 'is-error': connectionError }" role="status">
-      <span class="visually-hidden">
-        {{ connectionError
-          ? (total === null
-            ? 'Não foi possível conectar ao servidor de assinaturas.'
-            : 'Conexão interrompida. Exibindo a última contagem recebida.')
-          : 'Conectando…' }}
-      </span>
-    </p>
-  </main>
+    </main>
+  </div>
 </template>
 
 <style>
@@ -106,9 +121,25 @@ body {
   cursor: none;
 }
 
-/* Rendered 1:1 at the LED panel resolution, pinned to the top-left corner. */
+/* Fills the display; the panel is centred and scaled inside it. */
+.led-stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+/*
+ * Laid out at the LED panel resolution (384×192), then scaled around its centre
+ * to fit the window. With Windows display scaling above 100% the 384×192 output
+ * has fewer CSS pixels, and the panel shrinks to fit instead of being cropped.
+ */
 .led-panel {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
+  scale: var(--panel-scale, 1);
   width: var(--panel-width);
   height: var(--panel-height);
   overflow: hidden;
@@ -127,7 +158,7 @@ body {
 }
 
 .counter-total {
-  --digit-count: 5;
+  --digit-count: 4;
   margin: 0;
   color: #fff;
   font-size: 108px;

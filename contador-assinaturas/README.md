@@ -5,8 +5,10 @@ Aplicacao Nuxt que exibe apenas a quantidade de assinaturas do projeto
 
 ## Painel LED
 
-A pagina renderiza em 384×192 px (resolucao do painel), fixa no canto superior
-esquerdo, reproduzindo `painel-led-contador-384x192px.mp4`: fundo de ondas em
+A pagina e desenhada em 384×192 px (resolucao do painel) e ampliada ou reduzida
+para preencher a janela, mantendo a proporcao 2:1 (sobra em preto). Assim o painel
+aparece inteiro mesmo com a escala do Windows acima de 100%. O numero tem sempre
+pelo menos 4 digitos (4 → 0004). A pagina reproduz `painel-led-contador-384x192px.mp4`: fundo de ondas em
 movimento, numero com animacao de odometro e "JÁ ASSINARAM". A fonte (Anton) e
 servida localmente, sem dependencia de rede.
 

@@ -2,11 +2,13 @@
 // Odometer-style number, as in the reference video: each digit that changes
 // rolls down while the new one enters from above. Digits are keyed by
 // position from the right so units, tens, etc. keep their slot when the
-// number gains a digit.
+// number gains a digit. The panel always shows at least MIN_DIGITS digits,
+// zero-padded (4 → 0004).
+const MIN_DIGITS = 4
 const props = defineProps<{ value: number }>()
 
 const digits = computed(() => {
-  const text = String(Math.max(0, Math.trunc(props.value)))
+  const text = String(Math.max(0, Math.trunc(props.value))).padStart(MIN_DIGITS, '0')
   return [...text].map((char, index) => ({ slot: text.length - index, char }))
 })
 </script>
