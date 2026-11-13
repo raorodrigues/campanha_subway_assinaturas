@@ -39,17 +39,14 @@ com animação de odômetro e "JÁ ASSINARAM" em Subway Sans Cond Black.
 
 ## Fonte oficial Subway
 
-Todos os textos usam a fonte oficial (Subway Sans Cond). Ela é licenciada pelo
-cliente e **este repositório é público**, então os arquivos de fonte nunca são
-commitados:
+Todos os textos usam a fonte oficial (Subway Sans Cond), com publicação
+liberada pelo cliente. Só os 3 arquivos que o app usa (Medium, Bold e Black)
+ficam no repositório, em `app/assets/fonts/subway/`; o pacote completo
+`subway.zip` continua fora do Git e não é necessário para o build.
 
-1. Coloque `subway.zip` na raiz do projeto (já ignorado pelo Git).
-2. Rode `npm run fonts:extract`. Os arquivos usados vão para
-   `app/assets/fonts/subway/` (também ignorado).
-
-O build (`npm run build` / `npm run dev`) para com uma mensagem clara se a fonte
-estiver faltando, em vez de publicar outra fonte no totem. A lista de arquivos
-usados fica em `scripts/subway-fonts.mjs`.
+O build (`npm run build` / `npm run dev`) para com uma mensagem clara se algum
+desses arquivos sumir, em vez de publicar outra fonte no totem. A lista de
+arquivos usados fica em `scripts/subway-fonts.mjs`.
 
 ## Setup
 
@@ -60,7 +57,6 @@ Use Node.js 22.22.3+, 24.15.0+ ou 26+. O projeto fixa Node.js 22.22.3 em
 nvm install
 nvm use
 npm install
-npm run fonts:extract
 npm run dev
 ```
 
@@ -112,7 +108,6 @@ Para validar mudanças: `npm test` (depois de `npm run build`),
 
 ```bash
 npm ci
-npm run fonts:extract
 npm run build
 npm run preview -- --host 0.0.0.0 --port 3000
 ```
@@ -127,7 +122,7 @@ A contagem fica em `.data/signatures.sqlite`, relativa à pasta de onde o servid
 é iniciado. Para transferir uma contagem, pare o servidor de origem e copie a
 pasta `.data` inteira (incluindo `-wal`/`-shm`). Para atualizar, pare o servidor,
 faça backup de `.data`, copie o código novo sem substituir `.data`, rode
-`npm ci`, `npm run fonts:extract` e `npm run build` e inicie de novo.
+`npm ci` e `npm run build` e inicie de novo.
 
 ## Quiosque Windows (recomendado)
 
@@ -147,7 +142,6 @@ defina `HOST=0.0.0.0` antes de `npm run pm2:start` para acesso pela rede.
 nvm use 22.22.3
 npm install --global pm2   # uma vez por computador
 npm ci
-npm run fonts:extract
 npm run build
 npm run pm2:start
 pm2 status

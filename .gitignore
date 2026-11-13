@@ -3,7 +3,7 @@
 /fatiado/
 /layouts/
 
-# Client material: proprietary brand fonts and confidential API documentation
+# Client material: the full font package (the app ships only its 3 fonts) and confidential API documentation
 /subway.zip
 /Documentação API - Subway Frango com Catupiry.pdf
 /kiosk-windows/dist/
