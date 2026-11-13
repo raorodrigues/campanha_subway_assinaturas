@@ -28,7 +28,7 @@ const KIOSK_IMAGES = [
 const WELCOME_LINES = [
   'ELEJA *FRANGO*',
   '*COM CATUPIRY®*',
-  'PATRIMONIO',
+  'PATRIMÔNIO',
   'AFETIVO',
   'BRASILEIRO',
 ]
