@@ -170,8 +170,12 @@ html.page-counter body {
 }
 
 .counter-total .odometer {
-  /* Fixed slots, as in the reference: the narrow "1" keeps a full-width slot. */
-  --digit-width: 0.5em;
+  /*
+   * Fixed slots, as in the reference: the narrow "1" keeps a full-width slot.
+   * The widest Black digits have ~0.51em of ink and no side bearing, so the
+   * slot leaves ~0.05em between neighbours instead of letting them touch.
+   */
+  --digit-width: 0.56em;
   /*
    * Subway Sans Cond Black metrics: ascent 0.81em, descent 0.19em, digit ink
    * 0.725em tall. In a 0.91em line box the baseline sits at 0.765em, so the
@@ -180,7 +184,7 @@ html.page-counter body {
    */
   --digit-height: 0.82em;
   /* Shrink only when the count no longer fits the 384px panel (7+ digits). */
-  font-size: min(115px, calc(360px / (var(--digit-count) * 0.5)));
+  font-size: min(115px, calc(360px / (var(--digit-count) * 0.56)));
   line-height: 0.91em;
 }
 
