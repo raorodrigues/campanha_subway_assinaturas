@@ -67,6 +67,16 @@ test('one server serves the kiosk, the LED counter page and the shared count', {
     assert.match(kioskHtml, /Assine aqui/)
     assert.doesNotMatch(kioskHtml, /texto-eleja|botao-assine/)
 
+    // Both screens loop the agency's background animation, served locally.
+    assert.match(kioskHtml, /<video[^>]*src="\/videos\/fundo-1080x1920\.webm"/)
+    assert.match(counterHtml, /<video[^>]*src="\/videos\/fundo-384x192\.webm"/)
+    for (const path of ['/videos/fundo-1080x1920.webm', '/videos/fundo-384x192.webm']) {
+      const video = await fetch(`${address}${path}`)
+      assert.equal(video.status, 200, path)
+      assert.match(video.headers.get('content-type') ?? '', /^video\/webm/, path)
+      await video.arrayBuffer()
+    }
+
     const count = () => fetch(`${address}/api/signatures/count`).then(response => response.json())
     assert.deepEqual(await count(), { total: 0 })
     const submitted = await fetch(`${address}/api/signatures`, {
