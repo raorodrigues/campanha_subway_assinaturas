@@ -55,21 +55,25 @@ try {
     Write-KioskLog "kiosk.json 'counterPort' is obsolete and ignored: the counter is served at /counter."
   }
   $signatureUrl = 'http://127.0.0.1:{0}/' -f $config.signaturePort
-  # The LED software captures 384x192 physical pixels at a fixed origin of the
-  # counter display; the page pins the panel there. Optional, default 0,0.
-  $counterOffset = @{ X = 0; Y = 0 }
-  foreach ($axis in @('X', 'Y')) {
-    $name = 'counterOffset' + $axis
+  # The LED software captures a block of physical pixels of the counter display
+  # (origin X,Y; size Width x Height, default 384x192) and stretches it over the
+  # panel; the page fills exactly that block. All optional.
+  $counterCapture = [ordered]@{ OffsetX = 0; OffsetY = 0; Width = 384; Height = 192 }
+  foreach ($key in @($counterCapture.Keys)) {
+    $name = 'counter' + $key
     if ($config.PSObject.Properties.Name -contains $name) {
+      $min = if ($key -like 'Offset*') { 0 } else { 1 }
       $value = 0
-      if (-not [int]::TryParse([string] $config.$name, [ref] $value) -or $value -lt 0) {
-        throw "kiosk.json '$name' must be a whole number >= 0."
+      if (-not [int]::TryParse([string] $config.$name, [ref] $value) -or $value -lt $min -or $value -gt 4096) {
+        throw "kiosk.json '$name' must be a whole number from $min to 4096."
       }
-      $counterOffset[$axis] = $value
+      $counterCapture[$key] = $value
     }
   }
-  $counterUrl = 'http://127.0.0.1:{0}/counter?x={1}&y={2}' -f $config.signaturePort, $counterOffset.X, $counterOffset.Y
-  Write-KioskLog "LED counter capture origin: $($counterOffset.X),$($counterOffset.Y)"
+  $counterUrl = 'http://127.0.0.1:{0}/counter?x={1}&y={2}&w={3}&h={4}' -f $config.signaturePort,
+    $counterCapture.OffsetX, $counterCapture.OffsetY, $counterCapture.Width, $counterCapture.Height
+  Write-KioskLog ("LED counter capture area: {0}x{1} at {2},{3}" -f $counterCapture.Width,
+    $counterCapture.Height, $counterCapture.OffsetX, $counterCapture.OffsetY)
 
   # Optional so older kiosk.json files keep working; the server rejects invalid values.
   $countOffset = '0'
