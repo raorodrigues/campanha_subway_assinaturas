@@ -5,7 +5,7 @@ em um único PC Windows 10/11 **sem internet**. Substitui o PM2 no Windows.
 
 | Arquivo | Para que serve |
 |---|---|
-| `package-kiosk.sh` | Roda no Mac/Linux **com internet**. Extrai a fonte oficial de `subway.zip`, faz o build do site, roda os testes e monta a pasta `dist/kiosk` com o Node 22 portátil para Windows. |
+| `package-kiosk.sh` | Roda no Mac/Linux **com internet**. Faz o build do site, roda os testes e monta a pasta `dist/kiosk` com o Node 22 portátil para Windows. |
 | `install-kiosk.ps1` | Roda **uma vez** no totem, como Administrador. Inicialização automática, energia, gestos, notificações e políticas do navegador. |
 | `start-kiosk.ps1` / `.cmd` | Sobe o servidor e abre um navegador em tela cheia por tela (assinatura em `/`, contador em `/counter`). Reabre o que fechar ou travar. |
 | `stop-kiosk.cmd` | Encerra servidores e navegadores (manutenção). |
@@ -13,8 +13,6 @@ em um único PC Windows 10/11 **sem internet**. Substitui o PM2 no Windows.
 | `kiosk.json` | Portas, tempos de assinatura, navegador e telas. |
 
 ## 1. Gerar o pacote (no Mac, com internet)
-
-Antes, coloque `subway.zip` (fonte oficial, fora do git) na raiz do projeto.
 
 ```bash
 cd kiosk-windows
