@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { TypedImageLine } from '~/components/TypedImage.vue'
-
 interface SignaturePoint {
   x: number
   y: number
@@ -8,20 +6,6 @@ interface SignaturePoint {
 }
 
 type SignatureStroke = SignaturePoint[]
-
-// The two lines interlock: the "p" of "para" (x 331–340) hangs below the top of
-// "b"/"i" in "abaixo". Each line gets a notch so every glyph is typed with its own line.
-// Clip coordinates are local to each line box (TypedImage pads lines by 32px on the left).
-const INSTRUCTION_LINES: TypedImageLine[] = [
-  {
-    x: 0, y: 0, width: 728, height: 95, chars: 24, // Use o dedo para escrever
-    clip: 'polygon(0 0, 100% 0, 100% 75px, 373px 75px, 373px 100%, 363px 100%, 363px 75px, 0 75px)',
-  },
-  {
-    x: 112, y: 75, width: 487, height: 68, chars: 15, // seu nome abaixo
-    clip: 'polygon(0 0, 251px 0, 251px 20px, 262px 20px, 262px 0, 100% 0, 100% 100%, 0 100%)',
-  },
-]
 
 const props = defineProps<{
   /** True once the enter animation has settled; countdowns and input start only then. */
@@ -356,14 +340,9 @@ onBeforeUnmount(() => {
       <SignatureHandCue />
     </div>
 
-    <p class="visually-hidden">Use o dedo para escrever seu nome abaixo.</p>
-    <TypedImage
-      class="signing-screen__instructions"
-      src="/images/texto-assinatura.webp"
-      :width="728"
-      :height="143"
-      :lines="INSTRUCTION_LINES"
-    />
+    <p class="signing-screen__instructions m m-rise">
+      Use o dedo para escrever<br>seu nome abaixo
+    </p>
 
     <div class="signing-screen__pad m m-line">
       <img class="signing-screen__pad-frame" src="/images/box-assinatura.webp" alt="" aria-hidden="true" draggable="false">
@@ -402,12 +381,23 @@ onBeforeUnmount(() => {
   transform-origin: 630px 525px;
 }
 
+/*
+ * Measured on the artwork it replaces: Subway Sans Cond Medium, 64px caps
+ * (89.5px type), tightened 0.03em, baselines at y=787 and 862 (75px pitch).
+ */
 .signing-screen__instructions {
   position: absolute;
-  top: 720px;
+  top: 722px;
   left: 176px;
   width: 728px;
-  height: 143px;
+  margin: 0;
+  color: #fff;
+  font-size: 89.5px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 75px;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .signing-screen__pad {

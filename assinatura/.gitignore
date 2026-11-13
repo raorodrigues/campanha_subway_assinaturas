@@ -22,3 +22,6 @@ logs
 .env
 .env.*
 !.env.example
+
+# Official Subway fonts: licensed, never committed (npm run fonts:extract)
+app/assets/fonts/subway/

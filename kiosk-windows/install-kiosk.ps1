@@ -43,8 +43,13 @@ if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administra
 }
 
 foreach ($required in @('node\node.exe', 'assinatura\.output\server\index.mjs',
-    'contador-assinaturas\.output\server\index.mjs', 'start-kiosk.ps1', 'kiosk.json', 'boot.html')) {
+    'start-kiosk.ps1', 'kiosk.json', 'boot.html')) {
   if (-not (Test-Path (Join-Path $Root $required))) { throw "Arquivo ausente no pacote: $required" }
+}
+
+# Older packages ran the counter as a second app; it now lives at /counter.
+if (Test-Path (Join-Path $Root 'contador-assinaturas')) {
+  Write-Note "A pasta 'contador-assinaturas' de uma versao anterior nao e mais usada e pode ser apagada."
 }
 
 $riskyFolders = @($env:OneDrive, [Environment]::GetFolderPath('Desktop'), [Environment]::GetFolderPath('MyDocuments')) |

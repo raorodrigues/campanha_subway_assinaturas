@@ -1,0 +1,28 @@
+/*
+ * Official Subway typeface, bundled from app/assets/fonts/subway (git-ignored,
+ * see scripts/subway-fonts.mjs). `block` avoids a fallback flash: the files are
+ * local, so they load at once even offline.
+ */
+@font-face {
+  font-family: "Subway Sans Cond";
+  src: url("../fonts/subway/Subway Sans Cond-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Subway Sans Cond";
+  src: url("../fonts/subway/Subway Sans Cond-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Subway Sans Cond";
+  src: url("../fonts/subway/Subway Sans Cond-Black.otf") format("opentype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: block;
+}

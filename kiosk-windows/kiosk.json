@@ -1,9 +1,9 @@
 {
   "host": "127.0.0.1",
   "signaturePort": 3000,
-  "counterPort": 3001,
   "signatureCountdownSeconds": 10,
   "signatureIdleTimeoutSeconds": 5,
+  "signatureCountOffset": 0,
   "browser": "auto",
   "signatureScreen": "auto",
   "counterScreen": "auto",

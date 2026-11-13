@@ -63,7 +63,7 @@ const rows = Array.from({ length: ROW_COUNT }, (_, index) => ({
   </div>
 </template>
 
-<style>
+<style scoped>
 .wave-background {
   position: absolute;
   inset: 0;

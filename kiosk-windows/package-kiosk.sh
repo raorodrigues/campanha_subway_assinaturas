@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds both apps and assembles an offline Windows kiosk package.
+# Builds the app (kiosk + LED counter at /counter) and assembles an offline Windows kiosk package.
 # Run on a machine WITH internet (macOS/Linux). Output:
 #   kiosk-windows/dist/kiosk/          -> copy as C:\kiosk on the totem
 #   kiosk-windows/dist/kiosk-<stamp>.zip
@@ -15,7 +15,7 @@ KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$KIT_DIR")"
 CACHE_DIR="$KIT_DIR/.cache"
 OUT_DIR="$KIT_DIR/dist/kiosk"
-PROJECTS=(assinatura contador-assinaturas)
+PROJECTS=(assinatura)
 
 log() { printf '\033[32m==>\033[0m %s\n' "$*"; }
 fail() { printf '\033[31mERRO:\033[0m %s\n' "$*" >&2; exit 1; }
@@ -33,6 +33,8 @@ for project in "${PROJECTS[@]}"; do
   log "Build: $project"
   pushd "$REPO_DIR/$project" >/dev/null
   if [[ "${SKIP_INSTALL:-0}" != "1" ]]; then npm ci; fi
+  # Licensed Subway fonts come from subway_font.zip (never committed).
+  npm run fonts:extract
   npm run build
   npm test
   popd >/dev/null
