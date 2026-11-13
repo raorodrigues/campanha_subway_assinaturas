@@ -23,20 +23,22 @@ comprimida em WebP.
 
 ## Contador do painel LED (`/counter`)
 
-O software do painel LED captura um bloco fixo de 384×192 pixels **físicos** no
-canto superior esquerdo de uma área de trabalho maior. Por isso a página nunca
-se ajusta à janela: o painel fica preso nesse canto e é desenhado com exatamente
-384×192 pixels físicos, compensando a escala do Windows e o zoom do navegador
+O software do painel LED captura um bloco de pixels **físicos** de uma área de
+trabalho maior e estica-o sobre o painel inteiro. A página é desenhada em
+384×192 e esticada para preencher exatamente esse bloco (padrão 384×192 no canto
+superior esquerdo), compensando a escala do Windows e o zoom do navegador
 (`devicePixelRatio`). O resto da janela fica preto. O número tem sempre pelo
 menos 4 dígitos (4 → 0004). A página reproduz
 `layouts/painel-led-contador-384x192px.mp4`: fundo de ondas em movimento, número
 com animação de odômetro e "JÁ ASSINARAM" em Subway Sans Cond Black.
 
 - `/counter?demo` simula novas assinaturas para conferir o painel.
-- `/counter?calibrar` mostra uma moldura vermelha de 1 px, quadrados brancos
-  nos 4 cantos e a escala detectada, para alinhar com os LEDs.
-- `/counter?x=10&y=20` desloca a origem, em pixels físicos, se o software do
-  painel capturar outra posição (no kiosk: `counterOffsetX`/`counterOffsetY`).
+- `/counter?calibrar` mostra uma régua em pixels físicos (faixas numeradas de
+  32 em 32 px no topo e à esquerda) e uma moldura vermelha na área configurada.
+  O último número visível em cada borda do painel é o tamanho capturado.
+- `/counter?w=512&h=192` define o tamanho da área capturada e `?x=10&y=20` a
+  origem, em pixels físicos (no kiosk: `counterWidth`/`counterHeight` e
+  `counterOffsetX`/`counterOffsetY`).
 - Um ponto de 4 px no canto inferior direito indica o estado da conexão:
   branco ao conectar, vermelho quando o servidor não responde.
 - A contagem é atualizada a cada 500 ms depois de cada resposta, sem

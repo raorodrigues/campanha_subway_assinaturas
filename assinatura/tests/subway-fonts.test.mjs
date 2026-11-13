@@ -18,3 +18,17 @@ test('the build stops with a clear message when a Subway font file is missing', 
     rmSync(directory, { recursive: true })
   }
 })
+
+test('every Subway @font-face pins its vertical metrics so Windows renders like macOS', async () => {
+  const { readFileSync } = await import('node:fs')
+  const css = readFileSync(new URL('../app/assets/css/fonts.css', import.meta.url), 'utf8')
+  const faces = css.match(/@font-face\s*{[^}]*}/g) ?? []
+  assert.equal(faces.length, SUBWAY_FONT_FILES.length)
+  for (const face of faces) {
+    // Without these, Chrome on Windows uses usWinAscent/Descent and the LED
+    // counter digits drop below their clipping cells.
+    assert.match(face, /ascent-override:\s*80\.9%/)
+    assert.match(face, /descent-override:\s*19\.1%/)
+    assert.match(face, /line-gap-override:\s*20%/)
+  }
+})

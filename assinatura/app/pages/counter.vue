@@ -38,36 +38,51 @@ async function refreshCount() {
   }
 }
 
-// The LED controller software captures a fixed 384×192 block of *physical*
-// pixels at the top-left of a larger Windows desktop. So the panel is never
-// scaled to the window: it is pinned at the capture origin and drawn at exactly
-// 384×192 device pixels, whatever the Windows scaling or browser zoom
-// (devicePixelRatio 1.25 → 0.8 scale). `?x=` / `?y=` move it to another
-// capture origin, in physical pixels (kiosk.json counterOffsetX/Y).
-const panelScale = ref(1)
+// The LED controller software captures a fixed block of *physical* pixels on a
+// larger Windows desktop and stretches it over the whole panel. The block is
+// 384×192 by default (`?w=` / `?h=`, kiosk.json counterWidth/Height) and starts
+// at the top-left (`?x=` / `?y=`, kiosk.json counterOffsetX/Y). The design is
+// laid out at 384×192 and stretched to exactly that block, compensating the
+// Windows scaling or browser zoom (devicePixelRatio), so it fills the panel
+// whatever capture size the LED software uses. Never fit it to the window.
+const DESIGN_WIDTH = 384
+const DESIGN_HEIGHT = 192
+const MAX_CAPTURE_SIZE = 4096
+const panelScaleX = ref(1)
+const panelScaleY = ref(1)
 const panelX = ref(0)
 const panelY = ref(0)
-const offset = reactive({ x: 0, y: 0 })
+const capture = reactive({ x: 0, y: 0, width: DESIGN_WIDTH, height: DESIGN_HEIGHT })
 const calibrating = ref(false)
 const devicePixelRatio = ref(1)
 let resolutionQuery: MediaQueryList | undefined
 
-function readOffset(params: URLSearchParams, name: string) {
-  const value = Number(params.get(name) ?? 0)
-  return Number.isInteger(value) && value >= 0 ? value : 0
+function readInteger(params: URLSearchParams, name: string, fallback: number, min: number) {
+  const raw = params.get(name)
+  if (raw === null || raw.trim() === '') return fallback
+  const value = Number(raw)
+  return Number.isInteger(value) && value >= min && value <= MAX_CAPTURE_SIZE ? value : fallback
 }
 
 function pinPanel() {
   const ratio = window.devicePixelRatio || 1
   devicePixelRatio.value = ratio
-  panelScale.value = 1 / ratio
-  panelX.value = offset.x / ratio
-  panelY.value = offset.y / ratio
+  panelScaleX.value = capture.width / DESIGN_WIDTH / ratio
+  panelScaleY.value = capture.height / DESIGN_HEIGHT / ratio
+  panelX.value = capture.x / ratio
+  panelY.value = capture.y / ratio
   // Windows scaling or browser zoom changes the ratio: re-pin when it does.
   resolutionQuery?.removeEventListener('change', pinPanel)
   resolutionQuery = window.matchMedia(`(resolution: ${ratio}dppx)`)
   resolutionQuery.addEventListener('change', pinPanel)
 }
+
+// `?calibrar` ruler, in physical pixels from the capture origin: numbered
+// stripes every 32 px. The last number fully lit on the LEDs, at the right and
+// bottom edges, is the capture width and height to set in kiosk.json.
+const RULER_STEP = 32
+const rulerX = Array.from({ length: 1024 / RULER_STEP }, (_, index) => index * RULER_STEP)
+const rulerY = Array.from({ length: 512 / RULER_STEP }, (_, index) => index * RULER_STEP)
 
 // Display-only screen: no long-press menu or Ctrl+wheel/pinch zoom.
 function blockContextMenu(event: Event) {
@@ -86,8 +101,10 @@ function runDemo() {
 
 onMounted(() => {
   const params = new URLSearchParams(window.location.search)
-  offset.x = readOffset(params, 'x')
-  offset.y = readOffset(params, 'y')
+  capture.x = readInteger(params, 'x', 0, 0)
+  capture.y = readInteger(params, 'y', 0, 0)
+  capture.width = readInteger(params, 'w', DESIGN_WIDTH, 1)
+  capture.height = readInteger(params, 'h', DESIGN_HEIGHT, 1)
   calibrating.value = params.has('calibrar')
   pinPanel()
   window.addEventListener('resize', pinPanel)
@@ -110,8 +127,14 @@ onBeforeUnmount(() => {
 <template>
   <div class="led-stage">
     <main
+      v-show="!calibrating"
       class="led-panel"
-      :style="{ '--panel-scale': panelScale, '--panel-x': `${panelX}px`, '--panel-y': `${panelY}px` }"
+      :style="{
+        '--panel-scale-x': panelScaleX,
+        '--panel-scale-y': panelScaleY,
+        '--panel-x': `${panelX}px`,
+        '--panel-y': `${panelY}px`,
+      }"
     >
       <LedWaveBackground />
       <section class="led-content" aria-labelledby="counter-title">
@@ -129,14 +152,37 @@ onBeforeUnmount(() => {
             : 'Conectando…' }}
         </span>
       </p>
-      <div v-if="calibrating" class="calibration" aria-hidden="true">
-        <span class="calibration__corner is-top-left" />
-        <span class="calibration__corner is-top-right" />
-        <span class="calibration__corner is-bottom-left" />
-        <span class="calibration__corner is-bottom-right" />
-        <span class="calibration__label">384×192 · x{{ offset.x }} y{{ offset.y }} · escala {{ Math.round(devicePixelRatio * 100) }}%</span>
-      </div>
     </main>
+    <div
+      v-if="calibrating"
+      class="calibration"
+      aria-hidden="true"
+      :style="{
+        '--panel-scale-x': 1 / devicePixelRatio,
+        '--panel-scale-y': 1 / devicePixelRatio,
+        '--panel-x': `${panelX}px`,
+        '--panel-y': `${panelY}px`,
+      }"
+    >
+      <span
+        v-for="(start, index) in rulerX"
+        :key="`x${start}`"
+        class="calibration__stripe is-column"
+        :class="{ 'is-odd': index % 2 }"
+        :style="{ left: `${start}px` }"
+      >{{ start + RULER_STEP }}</span>
+      <span
+        v-for="(start, index) in rulerY"
+        :key="`y${start}`"
+        class="calibration__stripe is-row"
+        :class="{ 'is-odd': index % 2 }"
+        :style="{ top: `${start}px` }"
+      >{{ start + RULER_STEP }}</span>
+      <span class="calibration__frame" :style="{ width: `${capture.width}px`, height: `${capture.height}px` }" />
+      <span class="calibration__label">
+        área {{ capture.width }}×{{ capture.height }} · x{{ capture.x }} y{{ capture.y }} · escala {{ Math.round(devicePixelRatio * 100) }}%
+      </span>
+    </div>
   </div>
 </template>
 
@@ -165,10 +211,11 @@ html.page-counter body {
 }
 
 /*
- * Laid out at the LED panel resolution (384×192) and pinned at the capture
- * origin. The 1/devicePixelRatio scale makes one layout pixel one physical
- * pixel, so the panel covers exactly the 384×192 block the LED software reads.
- * Never centre or fit it to the window: the capture area does not move.
+ * Laid out at 384×192 and pinned at the capture origin, then stretched to the
+ * capture block in physical pixels (scale includes 1/devicePixelRatio). The LED
+ * software maps that block onto the whole 2:1 panel, so the 2:1 design comes
+ * out undistorted. Never centre or fit it to the window: the capture area does
+ * not move.
  */
 .led-panel {
   position: absolute;
@@ -176,7 +223,7 @@ html.page-counter body {
   left: 0;
   transform-origin: 0 0;
   translate: var(--panel-x, 0) var(--panel-y, 0);
-  scale: var(--panel-scale, 1);
+  scale: var(--panel-scale-x, 1) var(--panel-scale-y, 1);
   width: var(--panel-width);
   height: var(--panel-height);
   overflow: hidden;
@@ -249,37 +296,74 @@ html.page-counter body {
   background: #ff3b1f;
 }
 
-/* `?calibrar`: 1px frame and corner blocks to line the page up with the LEDs. */
+/*
+ * `?calibrar`: numbered stripes every 32 physical px from the capture origin,
+ * along the top (width) and the left (height), plus a red frame around the
+ * configured capture area. The last number lit at each edge of the LEDs is the
+ * capture size.
+ */
 .calibration {
   position: absolute;
-  inset: 0;
-  z-index: 2;
-  outline: 1px solid #ff0000;
-  outline-offset: -1px;
+  top: 0;
+  left: 0;
+  width: 1024px;
+  height: 512px;
+  transform-origin: 0 0;
+  translate: var(--panel-x, 0) var(--panel-y, 0);
+  scale: var(--panel-scale-x, 1) var(--panel-scale-y, 1);
+  background: #003a18;
+  font: 700 14px/1 system-ui, sans-serif;
   pointer-events: none;
 }
 
-.calibration__corner {
+.calibration__stripe {
   position: absolute;
-  width: 8px;
-  height: 8px;
+  display: flex;
+  box-sizing: border-box;
   background: #fff;
+  color: #000;
 }
 
-.calibration__corner.is-top-left { top: 0; left: 0; }
-.calibration__corner.is-top-right { top: 0; right: 0; }
-.calibration__corner.is-bottom-left { bottom: 0; left: 0; }
-.calibration__corner.is-bottom-right { right: 0; bottom: 0; }
+.calibration__stripe.is-odd {
+  background: #ffe100;
+}
+
+.calibration__stripe.is-column {
+  z-index: 1;
+  top: 0;
+  width: 32px;
+  height: 60px;
+  align-items: center;
+  padding: 2px 0;
+  writing-mode: vertical-rl;
+  rotate: 180deg;
+}
+
+.calibration__stripe.is-row {
+  left: 0;
+  width: 60px;
+  height: 32px;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0 2px 2px 0;
+}
+
+.calibration__frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  border: 2px solid #ff0000;
+}
 
 .calibration__label {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: 72px;
+  left: 72px;
   padding: 2px 4px;
   background: #000;
   color: #fff;
-  font: 700 12px/1 system-ui, sans-serif;
-  text-transform: none;
+  font-size: 12px;
   white-space: nowrap;
 }
 

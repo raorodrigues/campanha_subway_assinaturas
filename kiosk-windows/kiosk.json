@@ -9,5 +9,7 @@
   "counterScreen": "auto",
   "counterOffsetX": 0,
   "counterOffsetY": 0,
+  "counterWidth": 384,
+  "counterHeight": 192,
   "forceDeviceScaleFactor": 1
 }

@@ -2,6 +2,11 @@
  * Official Subway typeface, bundled from app/assets/fonts/subway (git-ignored,
  * see scripts/subway-fonts.mjs). `block` avoids a fallback flash: the files are
  * local, so they load at once even offline.
+ *
+ * The metric overrides pin the hhea values (ascent 0.809, descent 0.191, gap
+ * 0.2). The files leave USE_TYPO_METRICS off, so Chrome on Windows otherwise
+ * uses usWinAscent/usWinDescent (~1.10/0.21): text sits ~0.13em lower than on
+ * macOS and the LED counter digits get clipped at the bottom of their cells.
  */
 @font-face {
   font-family: "Subway Sans Cond";
@@ -9,6 +14,9 @@
   font-weight: 500;
   font-style: normal;
   font-display: block;
+  ascent-override: 80.9%;
+  descent-override: 19.1%;
+  line-gap-override: 20%;
 }
 
 @font-face {
@@ -17,6 +25,9 @@
   font-weight: 700;
   font-style: normal;
   font-display: block;
+  ascent-override: 80.9%;
+  descent-override: 19.1%;
+  line-gap-override: 20%;
 }
 
 @font-face {
@@ -25,4 +36,7 @@
   font-weight: 900;
   font-style: normal;
   font-display: block;
+  ascent-override: 80.9%;
+  descent-override: 19.1%;
+  line-gap-override: 20%;
 }
