@@ -41,7 +41,7 @@ if (-not $mutex.WaitOne(0)) {
 try {
   # --- Configuration -----------------------------------------------------------
   $config = Get-Content -Path (Join-Path $Root 'kiosk.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-  foreach ($required in @('host', 'signaturePort', 'counterPort', 'signatureCountdownSeconds',
+  foreach ($required in @('host', 'signaturePort', 'signatureCountdownSeconds',
       'signatureIdleTimeoutSeconds', 'browser', 'signatureScreen', 'counterScreen', 'forceDeviceScaleFactor')) {
     if (-not ($config.PSObject.Properties.Name -contains $required)) {
       throw "kiosk.json is missing '$required'."
@@ -50,8 +50,12 @@ try {
   if (-not (Test-Path $Node)) { throw "Portable Node not found at $Node. Rebuild the package with package-kiosk.sh." }
   if (Test-Path $StopFile) { Remove-Item $StopFile -Force }
 
+  # One server serves both screens: the touch kiosk at / and the LED counter at /counter.
+  if ($config.PSObject.Properties.Name -contains 'counterPort') {
+    Write-KioskLog "kiosk.json 'counterPort' is obsolete and ignored: the counter is served at /counter."
+  }
   $signatureUrl = 'http://127.0.0.1:{0}/' -f $config.signaturePort
-  $counterUrl = 'http://127.0.0.1:{0}/' -f $config.counterPort
+  $counterUrl = 'http://127.0.0.1:{0}/counter' -f $config.signaturePort
 
   # --- Node servers --------------------------------------------------------------
   $servers = @(
@@ -63,15 +67,6 @@ try {
         SIGNATURE_DB_PATH = Join-Path $DataDir 'signatures.sqlite'
         NUXT_PUBLIC_SIGNATURE_COUNTDOWN_SECONDS = [string] $config.signatureCountdownSeconds
         NUXT_PUBLIC_SIGNATURE_IDLE_TIMEOUT_SECONDS = [string] $config.signatureIdleTimeoutSeconds
-      }
-      Process = $null
-    },
-    @{
-      Name = 'contador-assinaturas'
-      Dir = Join-Path $Root 'contador-assinaturas'
-      Env = @{
-        PORT = [string] $config.counterPort
-        NUXT_SIGNATURE_API_BASE = $signatureUrl.TrimEnd('/')
       }
       Process = $null
     }

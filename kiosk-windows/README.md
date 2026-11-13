@@ -5,14 +5,16 @@ em um único PC Windows 10/11 **sem internet**. Substitui o PM2 no Windows.
 
 | Arquivo | Para que serve |
 |---|---|
-| `package-kiosk.sh` | Roda no Mac/Linux **com internet**. Faz o build dos dois sites, roda os testes e monta a pasta `dist/kiosk` com o Node 22 portátil para Windows. |
+| `package-kiosk.sh` | Roda no Mac/Linux **com internet**. Extrai a fonte oficial de `subway_font.zip`, faz o build do site, roda os testes e monta a pasta `dist/kiosk` com o Node 22 portátil para Windows. |
 | `install-kiosk.ps1` | Roda **uma vez** no totem, como Administrador. Inicialização automática, energia, gestos, notificações e políticas do navegador. |
-| `start-kiosk.ps1` / `.cmd` | Sobe os dois servidores e abre um navegador em tela cheia por tela. Reabre o que fechar ou travar. |
+| `start-kiosk.ps1` / `.cmd` | Sobe o servidor e abre um navegador em tela cheia por tela (assinatura em `/`, contador em `/counter`). Reabre o que fechar ou travar. |
 | `stop-kiosk.cmd` | Encerra servidores e navegadores (manutenção). |
 | `boot.html` | Tela verde "Iniciando…" que espera o servidor responder antes de abrir o site. |
 | `kiosk.json` | Portas, tempos de assinatura, navegador e telas. |
 
 ## 1. Gerar o pacote (no Mac, com internet)
+
+Antes, coloque `subway_font.zip` (fonte oficial, fora do git) na raiz do projeto.
 
 ```bash
 cd kiosk-windows
@@ -25,7 +27,7 @@ não há módulos nativos, então a mesma pasta `.output` roda no Windows.
 ## 2. Instalar no totem (offline)
 
 1. Copie o zip por pendrive e extraia em **`C:\kiosk`** (a pasta deve conter `node\`,
-   `assinatura\`, `contador-assinaturas\`, `start-kiosk.ps1`…).
+   `assinatura\`, `start-kiosk.ps1`…).
    **Não** use Área de Trabalho, Documentos ou OneDrive: sincronização e antivírus
    podem travar o banco SQLite.
 2. Abra o PowerShell **como Administrador** e rode:
@@ -60,7 +62,7 @@ Faça com a conta do totem logada. Marque cada item.
 ## 4. Teste de aceitação (antes do evento)
 
 1. Reinicie o PC. Em até ~30 s: totem mostra "Eleja frango…", contador mostra o número.
-2. Toque em **Assine aqui**, assine com o dedo, aguarde o "Obrigado". O contador sobe em até 2 s.
+2. Toque em **Assine aqui**, assine com o dedo, aguarde o "Obrigado". O contador sobe em menos de 1 s.
 3. Toque em **Assine aqui** e não assine: em 5 s volta ao início, sem contar.
 4. Tente: pinça com dois dedos, toque longo em imagem, deslizar das bordas. Nada deve acontecer.
 5. Feche um navegador com Alt+F4 (teclado USB): ele reabre em até 5 s.
@@ -71,7 +73,7 @@ Faça com a conta do totem logada. Marque cada item.
 - **Parar para manutenção:** Ctrl+Alt+Del > Gerenciador de Tarefas > Executar nova tarefa >
   `C:\kiosk\stop-kiosk.cmd`. Para voltar: `C:\kiosk\start-kiosk.cmd` ou reinicie.
 - **Logs:** `C:\kiosk\logs\kiosk.log` (inícios, reinícios, telas detectadas),
-  `assinatura.log` e `contador-assinaturas.log`.
+  `assinatura.log` (servidor único da assinatura e do contador).
 - **Backup da contagem:** pare o quiosque e copie `C:\kiosk\data\` inteira.
 - **Atualizar:** pare o quiosque, faça backup de `data\`, substitua tudo em `C:\kiosk`
   **exceto `data\`** pelo pacote novo e reinicie.
@@ -81,7 +83,7 @@ Faça com a conta do totem logada. Marque cada item.
 | Campo | Padrão | Observação |
 |---|---|---|
 | `host` | `127.0.0.1` | Só este PC acessa os sites (sem aviso de firewall). Use `0.0.0.0` apenas se outro aparelho precisar acessar. |
-| `signaturePort` / `counterPort` | `3000` / `3001` | |
+| `signaturePort` | `3000` | Porta do servidor. O contador abre em `/counter` nesta mesma porta; `counterPort` de versões anteriores é ignorado. |
 | `signatureCountdownSeconds` | `10` | Tempo total da sessão de assinatura. |
 | `signatureIdleTimeoutSeconds` | `5` | Volta ao início se ninguém começar a assinar. |
 | `browser` | `auto` | `auto` (Chrome se instalado, senão Edge), `edge` ou `chrome`. |

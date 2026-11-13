@@ -1,4 +1,17 @@
 <script setup lang="ts">
+// LED panel counter (384×192), opened by the kiosk on the second display.
+// Same server as the signature kiosk, so the count comes straight from SQLite.
+useHead({
+  htmlAttrs: { class: 'page-counter' },
+  title: 'Contador de assinaturas',
+})
+
+// The count is a local SQLite COUNT(*) (~1 ms), so polling every 500 ms costs
+// nothing and a new signature shows up on the panel almost at once. The next
+// poll starts only after the previous answer, so requests never pile up.
+const REFRESH_INTERVAL = 500
+const REQUEST_TIMEOUT = 2000
+
 const total = ref<number | null>(null)
 const connectionError = ref(false)
 let refreshTimer: ReturnType<typeof setTimeout> | undefined
@@ -10,7 +23,7 @@ async function refreshCount() {
   try {
     const result = await $fetch('/api/signatures/count', {
       signal: controller.signal,
-      timeout: 4000,
+      timeout: REQUEST_TIMEOUT,
       retry: 0,
     })
     if (disposed) return
@@ -21,7 +34,7 @@ async function refreshCount() {
     console.error('Failed to refresh signature count', error)
     connectionError.value = true
   } finally {
-    if (!disposed) refreshTimer = setTimeout(refreshCount, 2000)
+    if (!disposed) refreshTimer = setTimeout(refreshCount, REFRESH_INTERVAL)
   }
 }
 
@@ -35,7 +48,7 @@ function fitPanel() {
   panelScale.value = Math.min(window.innerWidth / PANEL_WIDTH, window.innerHeight / PANEL_HEIGHT)
 }
 
-// Display-only kiosk screen: no long-press menu or Ctrl+wheel/pinch zoom.
+// Display-only screen: no long-press menu or Ctrl+wheel/pinch zoom.
 function blockContextMenu(event: Event) {
   event.preventDefault()
 }
@@ -44,8 +57,7 @@ function blockZoomWheel(event: WheelEvent) {
   if (event.ctrlKey) event.preventDefault()
 }
 
-// `?demo` simulates new signatures locally to preview the panel animation
-// without the signature server.
+// `?demo` simulates new signatures to preview the panel animation.
 function runDemo() {
   total.value = (total.value ?? 12310) + 1
   refreshTimer = setTimeout(runDemo, 1200)
@@ -72,8 +84,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="led-stage">
     <main class="led-panel" :style="{ '--panel-scale': panelScale }">
-      <NuxtRouteAnnouncer />
-      <WaveBackground />
+      <LedWaveBackground />
       <section class="led-content" aria-labelledby="counter-title">
         <p class="counter-total" aria-live="off">
           <OdometerNumber v-if="total !== null" :value="total" />
@@ -94,7 +105,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style>
-:root {
+html.page-counter {
   --subway-green: #008939;
   --subway-green-dark: #00491e;
   --subway-yellow: #ffe100;
@@ -104,20 +115,8 @@ onBeforeUnmount(() => {
   background: #000;
 }
 
-* {
-  box-sizing: border-box;
-  touch-action: pan-x pan-y;
-}
-
-html,
-body {
-  margin: 0;
-  overflow: hidden;
+html.page-counter body {
   background: #000;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  overscroll-behavior: none;
   cursor: none;
 }
 
@@ -144,7 +143,7 @@ body {
   height: var(--panel-height);
   overflow: hidden;
   background: var(--subway-green);
-  font-family: Anton, Impact, "Arial Narrow", sans-serif;
+  font-weight: 900;
   text-transform: uppercase;
 }
 
@@ -157,43 +156,40 @@ body {
   justify-content: center;
 }
 
+/*
+ * Sizes measured on painel-led-contador-384x192px.mp4: digits ~82px tall in
+ * 58px slots, caption 275px wide, 15px between the two.
+ */
 .counter-total {
   --digit-count: 4;
+  display: flex;
   margin: 0;
   color: #fff;
-  font-size: 108px;
-  line-height: 1;
+  font-size: 115px;
+  line-height: 0;
 }
 
-/* Anton is narrower than the reference face: widen glyphs to match it. */
 .counter-total .odometer {
-  --digit-width: 0.535em;
+  /* Fixed slots, as in the reference: the narrow "1" keeps a full-width slot. */
+  --digit-width: 0.5em;
   /*
-   * Anton metrics: ascent 1.18em, descent 0.33em, digit ink 0.87em tall.
-   * Baseline sits at line-height/2 + 0.425em, so line-height 0.99em puts it
-   * at 0.92em: ink spans 0.05em–0.92em inside the 0.96em clipping cell,
-   * leaving a small margin top and bottom (no clipped digits).
+   * Subway Sans Cond Black metrics: ascent 0.81em, descent 0.19em, digit ink
+   * 0.725em tall. In a 0.91em line box the baseline sits at 0.765em, so the
+   * ink spans 0.04em–0.765em inside the 0.82em clipping cell: a small margin
+   * top and bottom, no clipped digits while rolling.
    */
-  --digit-height: 0.96em;
+  --digit-height: 0.82em;
   /* Shrink only when the count no longer fits the 384px panel (7+ digits). */
-  font-size: min(108px, calc(360px / (var(--digit-count) * 0.535)));
-  line-height: 0.99em;
-}
-
-.counter-total .odometer-digit {
-  transform-origin: center;
-  scale: 1.1 1;
+  font-size: min(115px, calc(360px / (var(--digit-count) * 0.5)));
+  line-height: 0.91em;
 }
 
 .counter-caption {
-  margin: 0;
+  margin: 4px 0 0;
   color: var(--subway-yellow);
-  margin-top: 0;
-  font-size: 41px;
-  font-weight: 400;
-  letter-spacing: 0.015em;
+  font-size: 48px;
+  font-weight: 900;
   line-height: 1;
-  scale: 1.14 1;
 }
 
 .connection-status {
@@ -219,5 +215,4 @@ body {
   clip-path: inset(50%);
   white-space: nowrap;
 }
-
 </style>
