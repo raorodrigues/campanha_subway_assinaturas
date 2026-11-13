@@ -32,10 +32,20 @@ async function openDatabase() {
     PRAGMA busy_timeout = 5000;
     PRAGMA journal_mode = WAL;
     CREATE TABLE IF NOT EXISTS signature_submissions (
-      id TEXT PRIMARY KEY
+      id TEXT PRIMARY KEY,
+      created_at TEXT
     );
   `)
+  addCreatedAtColumn(connection)
   return connection
+}
+
+// Databases created before created_at existed keep their table, so add the column
+// in place. Those older rows stay NULL: their real creation time was never recorded.
+function addCreatedAtColumn(connection: DatabaseSync) {
+  const columns = connection.prepare('PRAGMA table_info(signature_submissions)').all()
+  if (columns.some((column) => column.name === 'created_at')) return
+  connection.exec('ALTER TABLE signature_submissions ADD COLUMN created_at TEXT')
 }
 
 function getDatabase() {
@@ -61,6 +71,10 @@ export async function getSignatureCount() {
 
 export async function recordSignature(id: string) {
   const database = await getDatabase()
-  database.prepare('INSERT OR IGNORE INTO signature_submissions (id) VALUES (?)').run(id)
+  // ISO 8601 UTC with milliseconds, e.g. 2026-11-13T14:05:09.123Z
+  database.prepare(`
+    INSERT OR IGNORE INTO signature_submissions (id, created_at)
+    VALUES (?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  `).run(id)
   return countSignatures(database)
 }

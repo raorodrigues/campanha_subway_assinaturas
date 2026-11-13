@@ -1,6 +1,11 @@
 /.DS_Store
 /**/.DS_Store
 /fatiado/
+/layouts/
+
+# Client material: proprietary brand fonts and confidential API documentation
+/subway_font.zip
+/Documentação API - Subway Frango com Catupiry.pdf
 /kiosk-windows/dist/
 /kiosk-windows/.cache/
 
