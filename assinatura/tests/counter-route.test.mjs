@@ -62,6 +62,10 @@ test('one server serves the kiosk, the LED counter page and the shared count', {
     const kioskHtml = await kiosk.text()
     assert.match(kioskHtml, /class="[^"]*page-signature/)
     assert.match(kioskHtml, /width=1080/)
+    // Live text in the official font, not the old text artwork.
+    assert.match(kioskHtml, /PATRIMONIO/)
+    assert.match(kioskHtml, /Assine aqui/)
+    assert.doesNotMatch(kioskHtml, /texto-eleja|botao-assine/)
 
     const count = () => fetch(`${address}/api/signatures/count`).then(response => response.json())
     assert.deepEqual(await count(), { total: 0 })

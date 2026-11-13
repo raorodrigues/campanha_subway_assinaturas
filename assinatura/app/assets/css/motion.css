@@ -4,12 +4,12 @@
  *
  * How it works
  * - app.vue renders the screens inside <Transition name="screen" mode="out-in">.
- * - Every animated object carries `m` plus a role class (m-type, m-pop,
- *   m-strip, m-line). Roles pick the keyframes; the timeline map below gives
- *   each object its start time and duration on enter (--in-at, --in-dur) and
- *   on leave (--out-at, --out-dur).
- * - Typed text lines (TypedImage) derive their timing from their character
- *   count (--n), the characters before them (--c) and the screen's --m-char.
+ * - Every animated object carries `m` plus a role class (m-word, m-pop,
+ *   m-left, m-right, m-rise, m-line). Roles pick the keyframes; the timeline
+ *   map below gives each object its start time and duration on enter
+ *   (--in-at, --in-dur) and on leave (--out-at, --out-dur).
+ * - Words (WordReveal) enter one after another: word --w starts at
+ *   --m-words-at + --w × --m-word-stagger. Text always leaves all at once.
  * - Vue only watches the screen root, so the root runs an invisible "hold"
  *   animation of --in-total / --out-total. Keep those equal to the slowest
  *   child on that screen.
@@ -22,7 +22,8 @@
   --m-ease-out: cubic-bezier(0.22, 1, 0.36, 1); /* ease-out quint: settles without bounce */
   --m-ease-in: cubic-bezier(0.55, 0, 1, 0.45);
   --m-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --m-type-soft: 24px; /* soft edge of the typing mask ≈ the fading last letter */
+  --m-word-rise: 28px; /* words enter from slightly below */
+  --m-slide: 64px; /* food photos: short slide, as in the first version */
   --m-pop-scale: 0.9;
   --m-line-width: 0.006; /* box collapsed to a ~5px vertical line */
   --m-attract-period: 2.4s;
@@ -31,54 +32,42 @@
 /* ------------------------------ Timeline map ------------------------------ */
 
 .welcome-screen {
-  --m-char: 32ms; /* 52 characters ≈ 1.66s, as in the reference */
-  --m-type-out-stagger: 25ms;
-  --m-type-out: 180ms;
-  --in-total: 1700ms;
+  --m-words-at: 150ms;
+  --m-word-stagger: 110ms;
+  --m-word-in: 450ms; /* 7 words: last one settles at ~1.26s */
+  --m-word-out: 200ms;
+  --in-total: 1300ms;
   --out-total: 300ms;
 }
-.welcome-screen__food { --in-at: 100ms; --in-dur: 700ms; --out-dur: 280ms; }
-/* Pops in while the headline is still typing; tappable from that moment. */
-.welcome-screen__button { --in-at: 950ms; --in-dur: 380ms; --out-dur: 180ms; }
+/* First-version timing: each photo slides 64px from its own side with a fade. */
+.welcome-screen__food-left,
+.welcome-screen__food-right { --in-at: 100ms; --in-dur: 300ms; --out-dur: 160ms; }
+/* Pops in while the headline is still appearing; tappable from that moment. */
+.welcome-screen__button { --in-at: 700ms; --in-dur: 380ms; --out-dur: 180ms; }
 
 .signing-screen {
-  --m-char: 10ms;
-  --m-type-out-stagger: 40ms;
-  --m-type-out: 200ms;
   --in-total: 500ms;
   --out-total: 420ms;
 }
+.signing-screen__instructions { --in-dur: 400ms; --out-dur: 200ms; }
 .signing-screen__pad { --in-dur: 460ms; --out-dur: 420ms; }
 .signing-screen__hand { --in-at: 250ms; --in-dur: 250ms; --out-dur: 160ms; }
 
 .thank-you-screen {
-  --m-char: 32ms;
-  --m-type-out-stagger: 40ms;
-  --m-type-out: 200ms;
-  --in-total: 850ms;
+  --m-words-at: 100ms;
+  --m-word-stagger: 90ms;
+  --m-word-in: 450ms; /* 12 words: last one settles at ~1.54s */
+  --m-word-out: 220ms;
+  --in-total: 1550ms;
   --out-total: 260ms;
 }
 
-/* ------------------------------ Typed text mask ------------------------------ */
-
-/*
- * The mask is twice the line's width: one half opaque, one half clear, with a
- * soft edge in the middle. Sliding it from 100% to 0% moves the edge across
- * the line from left to right. The resting state (0%) shows the whole line.
- */
-.m-type {
-  -webkit-mask-image: linear-gradient(90deg, #000 calc(50% - var(--m-type-soft)), transparent calc(50% + var(--m-type-soft)));
-  mask-image: linear-gradient(90deg, #000 calc(50% - var(--m-type-soft)), transparent calc(50% + var(--m-type-soft)));
-  -webkit-mask-size: 200% 100%;
-  mask-size: 200% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: 0 0;
-  mask-position: 0 0;
-  --in-at: calc(var(--c, 0) * var(--m-char));
-  --in-dur: calc(var(--n, 1) * var(--m-char));
-  --out-at: calc(var(--x, 0) * var(--m-type-out-stagger));
-  --out-dur: var(--m-type-out);
+/* Word-by-word text: staggered in, all together out. */
+.m-word {
+  --in-at: calc(var(--m-words-at, 0ms) + var(--w, 0) * var(--m-word-stagger, 100ms));
+  --in-dur: var(--m-word-in, 450ms);
+  --out-at: 0ms;
+  --out-dur: var(--m-word-out, 200ms);
 }
 
 /* ---------------------------------- Boot ---------------------------------- */
@@ -114,43 +103,36 @@
     animation-fill-mode: both;
   }
 
-  /* Typing: one step per character, so letters appear one at a time. */
-  .screen-enter-active .m-type,
-  .screen-leave-active .m-type {
-    animation-name: m-type;
-    animation-timing-function: steps(var(--n, 1), jump-end);
-  }
+  .screen-enter-active .m-word { animation-name: m-word-in; }
+  .screen-leave-active .m-word { animation-name: m-fade-out; }
 
-  /* Erasing starts at the left, like the reference: flip the mask halves. */
-  .screen-leave-active .m-type {
-    -webkit-mask-image: linear-gradient(90deg, transparent calc(50% - var(--m-type-soft)), #000 calc(50% + var(--m-type-soft)));
-    mask-image: linear-gradient(90deg, transparent calc(50% - var(--m-type-soft)), #000 calc(50% + var(--m-type-soft)));
-  }
-
-  /* Left before the headline finished typing: drop the lines instead of erasing text that never appeared. */
-  .welcome-screen.screen-leave-active:not(.is-settled) .m-type { animation-name: m-gone; }
+  .screen-enter-active .m-rise { animation-name: m-word-in; }
+  .screen-leave-active .m-rise { animation-name: m-fade-out; }
 
   .screen-enter-active .m-pop { animation-name: m-pop-in; }
   .screen-leave-active .m-pop { animation-name: m-pop-out; }
 
-  /* Food photos travel as one strip: in from the left, out to the right. */
-  .screen-enter-active .m-strip { animation-name: m-strip-in; }
-  .screen-leave-active .m-strip { animation-name: m-strip-out; }
+  /* Food photos: each one in and out on its own side. */
+  .screen-enter-active .m-left { animation-name: m-left-in; }
+  .screen-leave-active .m-left { animation-name: m-left-out; }
+  .screen-enter-active .m-right { animation-name: m-right-in; }
+  .screen-leave-active .m-right { animation-name: m-right-out; }
 
   /* Signature box: a vertical line that grows, then opens sideways; reversed on the way out. */
   .screen-enter-active .m-line { animation-name: m-line-in; animation-timing-function: linear; }
   .screen-leave-active .m-line { animation-name: m-line-out; animation-timing-function: linear; }
 
   /* Attract mode (welcome, idle, after its enter animation). */
-  .welcome-screen.is-attracting .welcome-screen__button-art {
-    animation: m-attract-wiggle var(--m-attract-period) ease-in-out infinite;
+  /* The button presses itself now and then, showing that it is meant to be tapped. */
+  .welcome-screen.is-attracting .welcome-screen__button-face {
+    animation: m-attract-press var(--m-attract-period) var(--m-ease-in-out) infinite;
   }
 
-  .welcome-screen.is-attracting .typed-image__flash {
+  .welcome-screen.is-attracting .word-reveal__word--highlight {
     animation: m-attract-flash var(--m-attract-period) steps(1, jump-end) infinite;
   }
 
-  .welcome-screen__button.is-pressed .welcome-screen__button-art {
+  .welcome-screen__button.is-pressed .welcome-screen__button-face {
     animation: none;
   }
 }
@@ -176,18 +158,16 @@
   to { opacity: 0; }
 }
 
-@keyframes m-gone {
-  from, to { opacity: 0; }
-}
-
 @keyframes m-footer-rise {
   from { transform: translateY(284px); }
   to { transform: none; }
 }
 
-@keyframes m-type {
-  from { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
-  to { -webkit-mask-position: 0 0; mask-position: 0 0; }
+/* `visibility` keeps a word from showing before its turn while it waits. */
+@keyframes m-word-in {
+  from { visibility: hidden; opacity: 0; transform: translateY(var(--m-word-rise)); }
+  1% { visibility: visible; }
+  to { visibility: visible; opacity: 1; transform: none; }
 }
 
 /* `visibility` keeps a not-yet-visible button from catching taps during its delay. */
@@ -203,14 +183,24 @@
   to { opacity: 0; transform: scale(var(--m-pop-scale)); }
 }
 
-@keyframes m-strip-in {
-  from { transform: translateX(-100%); }
-  to { transform: none; }
+@keyframes m-left-in {
+  from { opacity: 0; transform: translateX(calc(var(--m-slide) * -1)); }
+  to { opacity: 1; transform: none; }
 }
 
-@keyframes m-strip-out {
-  from { transform: none; }
-  to { transform: translateX(100%); }
+@keyframes m-left-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateX(calc(var(--m-slide) * -1)); }
+}
+
+@keyframes m-right-in {
+  from { opacity: 0; transform: translateX(var(--m-slide)); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes m-right-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateX(var(--m-slide)); }
 }
 
 @keyframes m-line-in {
@@ -239,18 +229,16 @@
   to { transform: scale(var(--m-line-width), 0); }
 }
 
-/* A short shake every cycle, then still — draws the eye without looking broken. */
-@keyframes m-attract-wiggle {
-  0%, 62%, 100% { transform: none; }
-  68% { transform: rotate(-2deg); }
-  74% { transform: rotate(2deg); }
-  80% { transform: rotate(-1.2deg); }
-  86% { transform: rotate(0.6deg); }
+/* Idle, then one quick press and release each cycle (the real tap's pressed state). */
+@keyframes m-attract-press {
+  0%, 62%, 100% { transform: none; box-shadow: var(--depth-shadow); }
+  68%, 78% { transform: translate(22px, 24px); box-shadow: var(--pressed-shadow); }
+  86% { transform: none; box-shadow: var(--depth-shadow); }
 }
 
-/* "FRANGO COM CATUPIRY" blinks white, as in the reference. */
+/* "FRANGO COM CATUPIRY®" blinks from yellow to white, as in the reference. */
 @keyframes m-attract-flash {
-  0% { opacity: 0; }
-  55% { opacity: 1; }
-  78% { opacity: 0; }
+  0% { color: var(--kiosk-yellow); }
+  55% { color: var(--kiosk-white); }
+  78% { color: var(--kiosk-yellow); }
 }

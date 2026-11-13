@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 export const SUBWAY_FONT_DIR = fileURLToPath(new URL('../app/assets/fonts/subway', import.meta.url))
 export const SUBWAY_FONT_ZIP = fileURLToPath(new URL('../../subway_font.zip', import.meta.url))
 export const SUBWAY_FONT_FILES = [
+  'Subway Sans Cond-Medium.otf',
   'Subway Sans Cond-Bold.otf',
   'Subway Sans Cond-Black.otf',
 ]

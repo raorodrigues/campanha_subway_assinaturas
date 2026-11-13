@@ -13,9 +13,13 @@ A interface é desenhada em 1080×1920 px CSS e roda em escala 1 no totem.
 Janelas menores mostram a tela inteira reduzida, útil para pré-visualizar no
 computador.
 
-As telas de boas-vindas, assinatura e agradecimento usam a arte fatiada em
-`../fatiado`, comprimida em WebP. A mão amarela (`fatiado/maozinha.png`)
-desenha uma assinatura na tela de assinatura, como no protótipo.
+Todos os textos são texto real na fonte oficial (títulos e botão em Subway
+Sans Cond Black, instrução de assinatura em Cond Medium), com tamanhos medidos
+na arte original. Os títulos de boas-vindas e de agradecimento entram palavra
+por palavra (`app/components/WordReveal.vue`) e saem de uma vez; a coreografia
+fica em `app/assets/css/motion.css`. Fotos, fundo, rodapé e a mão amarela
+(`fatiado/maozinha.png`) continuam sendo a arte fatiada em `../fatiado`,
+comprimida em WebP.
 
 ## Contador do painel LED (`/counter`)
 

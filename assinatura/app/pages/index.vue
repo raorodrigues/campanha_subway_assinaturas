@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { TypedImageLine } from '~/components/TypedImage.vue'
-
 type KioskScreen = 'welcome' | 'signing' | 'thanks'
 type Timer = ReturnType<typeof setTimeout>
 
@@ -19,28 +17,29 @@ const KIOSK_WIDTH = 1080
 const KIOSK_HEIGHT = 1920
 const KIOSK_IMAGES = [
   '/images/bg.webp',
-  '/images/texto-eleja.webp',
-  '/images/botao-assine-repouso.webp',
-  '/images/botao-assine-clicado.webp',
   '/images/lanche.webp',
   '/images/foto-direita.webp',
-  '/images/texto-assinatura.webp',
   '/images/box-assinatura.webp',
   '/images/maozinha.webp',
-  '/images/texto-obrigado.webp',
 ] as const
 
-// Line boxes measured on the artwork (alpha bounds); chars include spaces.
-const WELCOME_LINES: TypedImageLine[] = [
-  { x: 5, y: 0, width: 829, height: 113, chars: 12, flashFrom: 357 }, // ELEJA FRANGO
-  { x: 3, y: 128, width: 921, height: 113, chars: 13, flashFrom: 3 }, // COM CATUPIRY®
-  { x: 5, y: 256, width: 737, height: 113, chars: 10 }, // PATRIMONIO
-  { x: 0, y: 383, width: 487, height: 113, chars: 7 }, // AFETIVO
-  { x: 5, y: 511, width: 689, height: 113, chars: 10 }, // BRASILEIRO
+// Live text in the official font. *Asterisks* mark the highlighted words
+// (yellow; they flash white in attract mode). Line breaks follow the layout.
+const WELCOME_LINES = [
+  'ELEJA *FRANGO*',
+  '*COM CATUPIRY®*',
+  'PATRIMONIO',
+  'AFETIVO',
+  'BRASILEIRO',
 ]
-const THANK_YOU_LINES: TypedImageLine[] = [
-  { x: 0, y: 0, width: 846, height: 120, chars: 13 }, // OBRIGADO PELA
-  { x: 19, y: 120, width: 807, height: 129, chars: 13 }, // PARTICIPAÇÃO.
+const THANK_YOU_LINES = [
+  'MUITO',
+  'OBRIGADO!',
+  'SEU AMOR',
+  'POR FRANGO',
+  'COM CATUPIRY®',
+  'FOI REGISTRADO',
+  'COM SUCESSO.',
 ]
 
 if (!Number.isSafeInteger(signatureCountdownSeconds) || signatureCountdownSeconds < 1) {
@@ -64,8 +63,6 @@ const screen = ref<KioskScreen>('welcome')
 const isReady = ref(false)
 const isTransitioning = ref(false)
 const isAttracting = ref(false)
-// True once the welcome headline has finished typing; a leave before that drops the text instead of erasing it.
-const isWelcomeSettled = ref(false)
 const isSigningActive = ref(false)
 const isSubmitting = ref(false)
 const submissionError = ref('')
@@ -123,14 +120,11 @@ function onScreenBeforeLeave() {
 
 function onScreenAfterLeave() {
   isTransitioning.value = false
-  isWelcomeSettled.value = false
 }
 
 function onScreenAfterEnter() {
-  if (screen.value === 'welcome') {
-    isWelcomeSettled.value = true
-    isAttracting.value = true
-  } else if (screen.value === 'signing') isSigningActive.value = true
+  if (screen.value === 'welcome') isAttracting.value = true
+  else if (screen.value === 'signing') isSigningActive.value = true
   else startThankYouTimer()
 }
 
@@ -294,7 +288,7 @@ onBeforeUnmount(() => {
           v-if="screen === 'welcome'"
           key="welcome"
           class="screen welcome-screen"
-          :class="{ 'is-attracting': isAttracting, 'is-settled': isWelcomeSettled }"
+          :class="{ 'is-attracting': isAttracting }"
           aria-labelledby="welcome-title"
           @pointerdown="pressSignButton"
           @pointerup="releaseSignButton"
@@ -302,32 +296,22 @@ onBeforeUnmount(() => {
           @pointercancel="releaseSignButton"
           @click="activateSignButton"
         >
-          <h1 id="welcome-title" class="visually-hidden">Eleja frango com Catupiry, patrimônio afetivo brasileiro</h1>
-          <TypedImage
-            class="welcome-screen__headline"
-            src="/images/texto-eleja.webp"
-            :width="924"
-            :height="624"
-            :lines="WELCOME_LINES"
-          />
+          <WordReveal id="welcome-title" tag="h1" class="welcome-screen__headline" :lines="WELCOME_LINES" />
 
           <button
             class="welcome-screen__button m m-pop"
             :class="{ 'is-pressed': isSignButtonPressed }"
             type="button"
-            aria-label="Assine aqui"
           >
-            <span class="welcome-screen__button-art">
-              <img class="welcome-screen__button-idle" src="/images/botao-assine-repouso.webp" alt="" draggable="false">
-              <img class="welcome-screen__button-pressed" src="/images/botao-assine-clicado.webp" alt="" draggable="false">
-            </span>
+            <span class="welcome-screen__button-face">Assine aqui</span>
           </button>
 
-          <div class="welcome-screen__food m m-strip" aria-hidden="true">
-            <div class="welcome-screen__food-left">
+          <!-- As in the first version: each photo enters and leaves on its own side. -->
+          <div class="welcome-screen__food" aria-hidden="true">
+            <div class="welcome-screen__food-left m m-left">
               <img src="/images/lanche.webp" alt="" draggable="false">
             </div>
-            <img class="welcome-screen__food-right" src="/images/foto-direita.webp" alt="" draggable="false">
+            <img class="welcome-screen__food-right m m-right" src="/images/foto-direita.webp" alt="" draggable="false">
           </div>
         </section>
 
@@ -344,14 +328,7 @@ onBeforeUnmount(() => {
         />
 
         <section v-else key="thanks" class="screen thank-you-screen" aria-label="Agradecimento">
-          <p class="visually-hidden">Obrigado pela participação.</p>
-          <TypedImage
-            class="thank-you-screen__message"
-            src="/images/texto-obrigado.webp"
-            :width="846"
-            :height="249"
-            :lines="THANK_YOU_LINES"
-          />
+          <WordReveal class="thank-you-screen__message" :lines="THANK_YOU_LINES" />
         </section>
       </Transition>
     </div>
@@ -418,14 +395,46 @@ html.page-signature {
   clip-path: inset(50%);
 }
 
-.welcome-screen__headline {
-  position: absolute;
-  top: 130px;
-  left: 78px;
-  width: 924px;
-  height: 624px;
+.kiosk {
+  --kiosk-white: #fff;
+  /* Sampled from the artwork: the headline yellow and the button face match. */
+  --kiosk-yellow: #f2db25;
+  --button-face: #f2db25;
+  --button-depth: #daaa06;
+  --button-text: #00471d;
 }
 
+/*
+ * Headline and thank-you text, measured on the artwork they replace: Subway
+ * Sans Cond Black, 113px caps (156px type) on a 128px line pitch, slightly
+ * tightened as in the layout.
+ */
+.welcome-screen__headline,
+.thank-you-screen__message {
+  position: absolute;
+  color: var(--kiosk-white);
+  font-size: 156px;
+  font-weight: 900;
+  line-height: 128px;
+  letter-spacing: -0.025em;
+  text-transform: uppercase;
+}
+
+/* In a 128px line box the caps start ~1px below the top: matches the artwork at y=130. */
+.welcome-screen__headline {
+  top: 129px;
+  left: 78px;
+}
+
+.word-reveal__word--highlight {
+  color: var(--kiosk-yellow);
+}
+
+/*
+ * "Assine aqui": a yellow face on a darker yellow slab (the 3D depth of the
+ * layout). The depth is drawn with stacked shadows so it reads as one solid
+ * extrusion; pressing slides the face down into it.
+ */
 .welcome-screen__button {
   position: absolute;
   top: 866px;
@@ -439,39 +448,38 @@ html.page-signature {
   -webkit-tap-highlight-color: transparent;
 }
 
-.welcome-screen__button-art {
+.welcome-screen__button-face {
+  --depth-shadow:
+    3px 3px 0 var(--button-depth), 6px 6px 0 var(--button-depth),
+    9px 9px 0 var(--button-depth), 12px 12px 0 var(--button-depth),
+    15px 15px 0 var(--button-depth), 18px 18px 0 var(--button-depth),
+    21px 21px 0 var(--button-depth), 22px 24px 0 var(--button-depth);
+  --pressed-shadow:
+    0 0 0 var(--button-depth), 0 0 0 var(--button-depth),
+    0 0 0 var(--button-depth), 0 0 0 var(--button-depth),
+    0 0 0 var(--button-depth), 0 0 0 var(--button-depth),
+    0 0 0 var(--button-depth), 0 0 0 var(--button-depth);
   position: absolute;
-  inset: 0;
-  display: block;
-}
-
-/* Both artworks share the same bottom-right corner in the reference layouts. */
-.welcome-screen__button img {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  display: block;
-  max-width: none;
-  pointer-events: none;
-}
-
-.welcome-screen__button-idle {
-  width: 918px;
-  height: 187px;
-}
-
-.welcome-screen__button-pressed {
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 896px;
-  height: 154px;
-  visibility: hidden;
+  height: 160px;
+  border-radius: 22px;
+  background: var(--button-face);
+  box-shadow: var(--depth-shadow);
+  color: var(--button-text);
+  font-size: 104px;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
-.welcome-screen__button.is-pressed .welcome-screen__button-idle {
-  visibility: hidden;
-}
-
-.welcome-screen__button.is-pressed .welcome-screen__button-pressed {
-  visibility: visible;
+.welcome-screen__button.is-pressed .welcome-screen__button-face {
+  transform: translate(22px, 24px);
+  box-shadow: var(--pressed-shadow);
 }
 
 .welcome-screen__button:focus-visible {
@@ -514,12 +522,12 @@ html.page-signature {
   flex: 0 0 540px;
 }
 
+/* Seven lines (896px), centred in the green area above the footer (0–1636px). */
 .thank-you-screen__message {
-  position: absolute;
-  top: 745px;
-  left: 117px;
-  width: 846px;
-  height: 249px;
+  top: 370px;
+  left: 0;
+  width: 1080px;
+  text-align: center;
 }
 
 @media (prefers-reduced-motion: reduce) {
