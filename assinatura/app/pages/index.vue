@@ -36,8 +36,8 @@ const THANK_YOU_LINES = [
   'MUITO',
   'OBRIGADO!',
   'SEU AMOR',
-  'POR FRANGO',
-  'COM CATUPIRY®',
+  'POR *FRANGO*',
+  '*COM CATUPIRY®*',
   'FOI REGISTRADO',
   'COM SUCESSO.',
 ]
