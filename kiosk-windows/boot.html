@@ -39,11 +39,13 @@
   <p>Iniciando<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></p>
   <script>
     // Opened by start-kiosk.ps1 as file:///.../boot.html?target=http://127.0.0.1:3000/
+    // (or .../counter?x=0&y=0 for the LED counter).
     // Waits until the local server answers, then opens the app. The browser never
     // shows a "site can't be reached" page while Node is still starting.
     (function () {
       var target = new URLSearchParams(location.search).get('target')
-      if (!target || !/^http:\/\/127\.0\.0\.1:\d+\/$/.test(target)) {
+      var match = target && /^(http:\/\/127\.0\.0\.1:\d+\/)[\w\/?=&.-]*$/.exec(target)
+      if (!match) {
         document.querySelector('p').textContent = 'Endereço inválido em boot.html'
         return
       }
@@ -62,7 +64,7 @@
         // favicon.ico exists in both apps; any successful load means Node is serving.
         image.onload = function () { finish(true) }
         image.onerror = function () { finish(false) }
-        image.src = target + 'favicon.ico?boot=' + Date.now()
+        image.src = match[1] + 'favicon.ico?boot=' + Date.now()
       }
 
       probe()

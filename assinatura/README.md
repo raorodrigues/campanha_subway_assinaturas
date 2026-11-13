@@ -23,14 +23,20 @@ comprimida em WebP.
 
 ## Contador do painel LED (`/counter`)
 
-A página é desenhada em 384×192 px (resolução do painel) e ampliada ou reduzida
-para preencher a janela, mantendo a proporção 2:1 (sobra em preto). Assim o
-painel aparece inteiro mesmo com a escala do Windows acima de 100%. O número tem
-sempre pelo menos 4 dígitos (4 → 0004). A página reproduz
+O software do painel LED captura um bloco fixo de 384×192 pixels **físicos** no
+canto superior esquerdo de uma área de trabalho maior. Por isso a página nunca
+se ajusta à janela: o painel fica preso nesse canto e é desenhado com exatamente
+384×192 pixels físicos, compensando a escala do Windows e o zoom do navegador
+(`devicePixelRatio`). O resto da janela fica preto. O número tem sempre pelo
+menos 4 dígitos (4 → 0004). A página reproduz
 `layouts/painel-led-contador-384x192px.mp4`: fundo de ondas em movimento, número
 com animação de odômetro e "JÁ ASSINARAM" em Subway Sans Cond Black.
 
 - `/counter?demo` simula novas assinaturas para conferir o painel.
+- `/counter?calibrar` mostra uma moldura vermelha de 1 px, quadrados brancos
+  nos 4 cantos e a escala detectada, para alinhar com os LEDs.
+- `/counter?x=10&y=20` desloca a origem, em pixels físicos, se o software do
+  painel capturar outra posição (no kiosk: `counterOffsetX`/`counterOffsetY`).
 - Um ponto de 4 px no canto inferior direito indica o estado da conexão:
   branco ao conectar, vermelho quando o servidor não responde.
 - A contagem é atualizada a cada 500 ms depois de cada resposta, sem

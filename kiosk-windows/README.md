@@ -87,6 +87,7 @@ Faça com a conta do totem logada. Marque cada item.
 | `signatureCountOffset` | `0` | Somado ao número do contador (ex.: assinaturas coletadas fora do totem). Não altera o banco. Inteiro ≥ 0; valor inválido impede o servidor de subir (veja `logs\assinatura.log`). |
 | `browser` | `auto` | `auto` (Chrome se instalado, senão Edge), `edge` ou `chrome`. |
 | `signatureScreen` / `counterScreen` | `auto` | `auto` usa a tela em retrato para a assinatura e a outra para o contador. Para fixar, use o número da tela mostrado em `kiosk.log` (ex.: `0`, `1`). |
+| `counterOffsetX` / `counterOffsetY` | `0` | Origem, em pixels físicos da tela do contador, da área de 384×192 que o software do painel LED captura. O contador é desenhado exatamente ali, em 384×192 pixels físicos, com qualquer escala do Windows. Inteiro ≥ 0. |
 | `forceDeviceScaleFactor` | `1` | Mantém o layout 1080×1920 em escala 1 mesmo com Windows em 125/150%. |
 
 ## Problemas comuns
@@ -97,4 +98,5 @@ Faça com a conta do totem logada. Marque cada item.
 | Sites abertos na tela trocada | Detecção automática | Fixe `signatureScreen`/`counterScreen` em `kiosk.json` pelos números do `kiosk.log`. |
 | Toque age na tela errada | Mapeamento do touch | Checklist: Configurações do Tablet PC > Configurar. |
 | Layout menor com bordas verdes | Escala/resolução da tela | Escala 100% e resolução 1080×1920 em retrato. |
+| Painel LED mostra só verde/preto, sem número | Contador fora da área capturada | Abra `http://127.0.0.1:3000/counter?calibrar` na tela do contador: o painel deve mostrar a moldura vermelha e os 4 quadrados brancos nos cantos. Se aparecerem deslocados, ajuste `counterOffsetX`/`counterOffsetY` para a origem configurada no software do painel. |
 | Contador mostra "Conexão interrompida" | Assinatura parada | Veja `logs\assinatura.log`; o kiosk reinicia o servidor sozinho. |
