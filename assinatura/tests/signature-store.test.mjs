@@ -40,3 +40,62 @@ test('SQLite preserves the count across processes and ignores duplicate submissi
     rmSync(directory, { recursive: true })
   }
 })
+
+const ISO_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
+
+test('each submission stores its UTC creation time, kept on duplicate submissions', async () => {
+  const { DatabaseSync } = await import('node:sqlite')
+  const directory = mkdtempSync(join(tmpdir(), 'assinatura-store-test-'))
+  try {
+    const path = join(directory, 'signatures.sqlite')
+    const id = randomUUID()
+    const before = Date.now()
+    runStore(path, id)
+    const after = Date.now()
+    const read = () => {
+      const database = new DatabaseSync(path)
+      try {
+        return database.prepare('SELECT created_at FROM signature_submissions WHERE id = ?').get(id).created_at
+      } finally {
+        database.close()
+      }
+    }
+    const createdAt = read()
+    assert.match(createdAt, ISO_UTC)
+    assert.ok(Date.parse(createdAt) >= before - 1000 && Date.parse(createdAt) <= after + 1000)
+    runStore(path, id)
+    assert.equal(read(), createdAt)
+  } finally {
+    rmSync(directory, { recursive: true })
+  }
+})
+
+test('a database created before created_at existed is migrated without losing rows', async () => {
+  const { DatabaseSync } = await import('node:sqlite')
+  const directory = mkdtempSync(join(tmpdir(), 'assinatura-store-test-'))
+  try {
+    const path = join(directory, 'signatures.sqlite')
+    const legacyId = randomUUID()
+    const legacy = new DatabaseSync(path)
+    legacy.exec('CREATE TABLE signature_submissions (id TEXT PRIMARY KEY)')
+    legacy.prepare('INSERT INTO signature_submissions (id) VALUES (?)').run(legacyId)
+    legacy.close()
+
+    assert.deepEqual(runStore(path), { total: 1 })
+    const newId = randomUUID()
+    assert.deepEqual(runStore(path, newId), { total: 2 })
+
+    const database = new DatabaseSync(path)
+    try {
+      const rows = Object.fromEntries(
+        database.prepare('SELECT id, created_at FROM signature_submissions').all().map((row) => [row.id, row.created_at]),
+      )
+      assert.equal(rows[legacyId], null)
+      assert.match(rows[newId], ISO_UTC)
+    } finally {
+      database.close()
+    }
+  } finally {
+    rmSync(directory, { recursive: true })
+  }
+})
