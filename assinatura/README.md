@@ -84,6 +84,11 @@ do build e ignorado pelo Git; defina `SIGNATURE_DB_PATH` para outro caminho.
 Para backup, use as ferramentas de backup do SQLite ou pare o servidor antes de
 copiar o banco e os arquivos `-wal`/`-shm`.
 
+O total retornado é `assinaturas no banco + NUXT_SIGNATURE_COUNT_OFFSET`
+(padrão `0`), para somar assinaturas coletadas fora do totem. O offset nunca é
+gravado no banco: mudar ou zerar o valor só muda o número exibido. Precisa ser
+um inteiro ≥ 0; com valor inválido o servidor não sobe e mostra o motivo no log.
+
 - `GET /api/signatures/count` retorna `{ "total": 0 }`.
 - `POST /api/signatures` aceita apenas `{ "id": "<UUID v4>" }` e retorna a contagem.
 
@@ -152,7 +157,7 @@ pm2 save
   configure o Agendador de Tarefas para `pm2 resurrect` com o mesmo usuário,
   `PM2_HOME` e Node 22.22.3 (caminhos absolutos).
 
-`SIGNATURE_DB_PATH`, `NUXT_PUBLIC_SIGNATURE_COUNTDOWN_SECONDS` e
+`SIGNATURE_DB_PATH`, `NUXT_SIGNATURE_COUNT_OFFSET`, `NUXT_PUBLIC_SIGNATURE_COUNTDOWN_SECONDS` e
 `NUXT_PUBLIC_SIGNATURE_IDLE_TIMEOUT_SECONDS` podem ser definidas no ambiente
 antes de `pm2:start`. Os tempos são inteiros positivos em segundos (padrões `10`
 e `5`). O PM2 não carrega o `.env` da aplicação. Configure rotação dos logs do

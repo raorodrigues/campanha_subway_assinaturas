@@ -9,16 +9,26 @@ import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
 // Runs against the production build: `npm run build` first.
-async function startServer(databasePath) {
+// `env` entries set to null are removed from the inherited environment.
+async function startServer(databasePath, env = {}) {
+  const childEnv = { ...process.env, HOST: '127.0.0.1', PORT: '0', SIGNATURE_DB_PATH: databasePath }
+  delete childEnv.NUXT_SIGNATURE_COUNT_OFFSET
+  for (const [key, value] of Object.entries(env)) {
+    if (value === null) delete childEnv[key]
+    else childEnv[key] = value
+  }
   const child = spawn(process.execPath, ['.output/server/index.mjs'], {
     cwd: fileURLToPath(new URL('..', import.meta.url)),
-    env: { ...process.env, HOST: '127.0.0.1', PORT: '0', SIGNATURE_DB_PATH: databasePath },
+    env: childEnv,
     stdio: ['ignore', 'pipe', 'pipe'],
   })
   let output = ''
   child.stderr.on('data', chunk => { output += chunk.toString() })
   const address = await new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => reject(new Error(`Server startup timed out: ${output}`)), 10000)
+    const timeout = setTimeout(() => {
+      child.kill('SIGKILL')
+      reject(new Error(`Server startup timed out: ${output}`))
+    }, 10000)
     child.stdout.on('data', (chunk) => {
       output += chunk.toString()
       const match = output.match(/http:\/\/127\.0\.0\.1:(\d+)/)
@@ -68,3 +78,64 @@ test('one server serves the kiosk, the LED counter page and the shared count', {
     rmSync(directory, { recursive: true })
   }
 })
+
+async function submit(address) {
+  const response = await fetch(`${address}/api/signatures`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: randomUUID() }),
+  })
+  assert.equal(response.status, 200)
+  return response.json()
+}
+
+// Always stops the server, even when an assertion fails.
+async function withServer(databasePath, env, run) {
+  const { address, child } = await startServer(databasePath, env)
+  const exited = once(child, 'exit')
+  try {
+    await run(address)
+  } finally {
+    child.kill('SIGTERM')
+    await exited
+  }
+}
+
+const readCount = address => fetch(`${address}/api/signatures/count`).then(response => response.json())
+
+test('NUXT_SIGNATURE_COUNT_OFFSET is added to the shown total, never stored', { timeout: 30000 }, async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'assinatura-offset-test-'))
+  const databasePath = join(directory, 'signatures.sqlite')
+  try {
+    await withServer(databasePath, { NUXT_SIGNATURE_COUNT_OFFSET: '1000' }, async (address) => {
+      assert.deepEqual(await readCount(address), { total: 1000 })
+      assert.deepEqual(await submit(address), { total: 1001 })
+      assert.deepEqual(await readCount(address), { total: 1001 })
+    })
+    // Without the variable the offset defaults to 0: only the real signature remains.
+    await withServer(databasePath, { NUXT_SIGNATURE_COUNT_OFFSET: null }, async (address) => {
+      assert.deepEqual(await readCount(address), { total: 1 })
+    })
+  } finally {
+    rmSync(directory, { recursive: true })
+  }
+})
+
+for (const invalid of ['-5', '1.5', 'abc']) {
+  test(`the server refuses to start with NUXT_SIGNATURE_COUNT_OFFSET=${invalid}`, { timeout: 30000 }, async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'assinatura-offset-test-'))
+    try {
+      let started
+      try {
+        started = await startServer(join(directory, 'signatures.sqlite'), { NUXT_SIGNATURE_COUNT_OFFSET: invalid })
+      } catch (error) {
+        assert.match(error.message, /NUXT_SIGNATURE_COUNT_OFFSET must be a whole number ≥ 0/)
+        return
+      }
+      started.child.kill('SIGKILL')
+      assert.fail(`the server started with NUXT_SIGNATURE_COUNT_OFFSET=${invalid}`)
+    } finally {
+      rmSync(directory, { recursive: true })
+    }
+  })
+}

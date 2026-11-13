@@ -3,6 +3,7 @@
   "signaturePort": 3000,
   "signatureCountdownSeconds": 10,
   "signatureIdleTimeoutSeconds": 5,
+  "signatureCountOffset": 0,
   "browser": "auto",
   "signatureScreen": "auto",
   "counterScreen": "auto",

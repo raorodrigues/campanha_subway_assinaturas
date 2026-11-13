@@ -86,6 +86,7 @@ Faça com a conta do totem logada. Marque cada item.
 | `signaturePort` | `3000` | Porta do servidor. O contador abre em `/counter` nesta mesma porta; `counterPort` de versões anteriores é ignorado. |
 | `signatureCountdownSeconds` | `10` | Tempo total da sessão de assinatura. |
 | `signatureIdleTimeoutSeconds` | `5` | Volta ao início se ninguém começar a assinar. |
+| `signatureCountOffset` | `0` | Somado ao número do contador (ex.: assinaturas coletadas fora do totem). Não altera o banco. Inteiro ≥ 0; valor inválido impede o servidor de subir (veja `logs\assinatura.log`). |
 | `browser` | `auto` | `auto` (Chrome se instalado, senão Edge), `edge` ou `chrome`. |
 | `signatureScreen` / `counterScreen` | `auto` | `auto` usa a tela em retrato para a assinatura e a outra para o contador. Para fixar, use o número da tela mostrado em `kiosk.log` (ex.: `0`, `1`). |
 | `forceDeviceScaleFactor` | `1` | Mantém o layout 1080×1920 em escala 1 mesmo com Windows em 125/150%. |

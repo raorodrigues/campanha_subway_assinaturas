@@ -16,6 +16,8 @@ export default defineNuxtConfig({
     'build:before': () => assertSubwayFonts(),
   },
   runtimeConfig: {
+    // Added to the shown total (NUXT_SIGNATURE_COUNT_OFFSET); never stored.
+    signatureCountOffset: 0,
     public: {
       signatureCountdownSeconds: 10,
       signatureIdleTimeoutSeconds: 5

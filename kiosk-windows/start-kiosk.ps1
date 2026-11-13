@@ -57,6 +57,13 @@ try {
   $signatureUrl = 'http://127.0.0.1:{0}/' -f $config.signaturePort
   $counterUrl = 'http://127.0.0.1:{0}/counter' -f $config.signaturePort
 
+  # Optional so older kiosk.json files keep working; the server rejects invalid values.
+  $countOffset = '0'
+  if ($config.PSObject.Properties.Name -contains 'signatureCountOffset') {
+    $countOffset = [string] $config.signatureCountOffset
+  }
+  Write-KioskLog "Signature count offset: $countOffset"
+
   # --- Node servers --------------------------------------------------------------
   $servers = @(
     @{
@@ -67,6 +74,7 @@ try {
         SIGNATURE_DB_PATH = Join-Path $DataDir 'signatures.sqlite'
         NUXT_PUBLIC_SIGNATURE_COUNTDOWN_SECONDS = [string] $config.signatureCountdownSeconds
         NUXT_PUBLIC_SIGNATURE_IDLE_TIMEOUT_SECONDS = [string] $config.signatureIdleTimeoutSeconds
+        NUXT_SIGNATURE_COUNT_OFFSET = $countOffset
       }
       Process = $null
     }

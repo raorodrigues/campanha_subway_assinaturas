@@ -1,6 +1,6 @@
 import { getSignatureCount } from '../../utils/signature-store'
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   setResponseHeader(event, 'Cache-Control', 'no-store')
-  return getSignatureCount()
+  return withSignatureCountOffset(await getSignatureCount())
 })

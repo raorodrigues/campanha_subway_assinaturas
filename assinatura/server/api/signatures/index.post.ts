@@ -11,5 +11,5 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'A submission UUID is required; signature data is not accepted' })
   }
   setResponseHeader(event, 'Cache-Control', 'no-store')
-  return recordSignature(body.id)
+  return withSignatureCountOffset(await recordSignature(body.id))
 })
