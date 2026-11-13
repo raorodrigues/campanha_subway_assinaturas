@@ -1,8 +1,8 @@
 <script setup lang="ts">
 // Subway wave background of the LED counter: the agency's animation
-// (fatiado/FUNDO_384x192_v01.webm, 13.1 s, 30 fps) at the panel's native
-// 384×192. It starts and ends on the plain green, so it loops without a
-// visible cut. Served locally: the kiosk runs offline.
+// (fatiado/FUNDO_384x192_v01+.webm, 6.07 s, 30 fps) at the panel's native
+// 384×192. Its last frame matches the first, so it loops without a visible
+// cut. Served locally: the kiosk runs offline.
 const VIDEO_SRC = '/videos/fundo-384x192.webm'
 </script>
 

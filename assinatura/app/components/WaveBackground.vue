@@ -1,8 +1,8 @@
 <script setup lang="ts">
 // Subway wave background of the signature kiosk: the agency's animation
-// (fatiado/FUNDO_1080x1920_v01.webm, 13.1 s, 30 fps). It starts and ends on
-// the plain green, so it loops without a visible cut. Served locally: the
-// kiosk runs offline.
+// (fatiado/FUNDO_1080x1920_v01+.webm, 6.07 s, 30 fps). Its last frame matches
+// the first, so it loops without a visible cut. Served locally: the kiosk
+// runs offline.
 const VIDEO_SRC = '/videos/fundo-1080x1920.webm'
 </script>
 
