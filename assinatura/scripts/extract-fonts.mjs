@@ -3,7 +3,7 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { SUBWAY_FONT_DIR, SUBWAY_FONT_FILES, SUBWAY_FONT_ZIP, assertSubwayFonts } from './subway-fonts.mjs'
 
 if (!existsSync(SUBWAY_FONT_ZIP)) {
-  console.error(`subway_font.zip não encontrado em ${SUBWAY_FONT_ZIP}.`)
+  console.error(`subway.zip não encontrado em ${SUBWAY_FONT_ZIP}.`)
   process.exit(1)
 }
 

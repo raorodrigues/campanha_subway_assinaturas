@@ -43,7 +43,7 @@ Todos os textos usam a fonte oficial (Subway Sans Cond). Ela é licenciada pelo
 cliente e **este repositório é público**, então os arquivos de fonte nunca são
 commitados:
 
-1. Coloque `subway_font.zip` na raiz do projeto (já ignorado pelo Git).
+1. Coloque `subway.zip` na raiz do projeto (já ignorado pelo Git).
 2. Rode `npm run fonts:extract`. Os arquivos usados vão para
    `app/assets/fonts/subway/` (também ignorado).
 

@@ -33,7 +33,7 @@ for project in "${PROJECTS[@]}"; do
   log "Build: $project"
   pushd "$REPO_DIR/$project" >/dev/null
   if [[ "${SKIP_INSTALL:-0}" != "1" ]]; then npm ci; fi
-  # Licensed Subway fonts come from subway_font.zip (never committed).
+  # Licensed Subway fonts come from subway.zip (never committed).
   npm run fonts:extract
   npm run build
   npm test
