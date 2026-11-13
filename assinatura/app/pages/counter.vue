@@ -38,14 +38,35 @@ async function refreshCount() {
   }
 }
 
-// The panel is designed at 384×192 and scaled to fill the display while
-// keeping its 2:1 ratio; any leftover area stays black (letterbox).
-const PANEL_WIDTH = 384
-const PANEL_HEIGHT = 192
+// The LED controller software captures a fixed 384×192 block of *physical*
+// pixels at the top-left of a larger Windows desktop. So the panel is never
+// scaled to the window: it is pinned at the capture origin and drawn at exactly
+// 384×192 device pixels, whatever the Windows scaling or browser zoom
+// (devicePixelRatio 1.25 → 0.8 scale). `?x=` / `?y=` move it to another
+// capture origin, in physical pixels (kiosk.json counterOffsetX/Y).
 const panelScale = ref(1)
+const panelX = ref(0)
+const panelY = ref(0)
+const offset = reactive({ x: 0, y: 0 })
+const calibrating = ref(false)
+const devicePixelRatio = ref(1)
+let resolutionQuery: MediaQueryList | undefined
 
-function fitPanel() {
-  panelScale.value = Math.min(window.innerWidth / PANEL_WIDTH, window.innerHeight / PANEL_HEIGHT)
+function readOffset(params: URLSearchParams, name: string) {
+  const value = Number(params.get(name) ?? 0)
+  return Number.isInteger(value) && value >= 0 ? value : 0
+}
+
+function pinPanel() {
+  const ratio = window.devicePixelRatio || 1
+  devicePixelRatio.value = ratio
+  panelScale.value = 1 / ratio
+  panelX.value = offset.x / ratio
+  panelY.value = offset.y / ratio
+  // Windows scaling or browser zoom changes the ratio: re-pin when it does.
+  resolutionQuery?.removeEventListener('change', pinPanel)
+  resolutionQuery = window.matchMedia(`(resolution: ${ratio}dppx)`)
+  resolutionQuery.addEventListener('change', pinPanel)
 }
 
 // Display-only screen: no long-press menu or Ctrl+wheel/pinch zoom.
@@ -64,15 +85,20 @@ function runDemo() {
 }
 
 onMounted(() => {
-  fitPanel()
-  window.addEventListener('resize', fitPanel)
+  const params = new URLSearchParams(window.location.search)
+  offset.x = readOffset(params, 'x')
+  offset.y = readOffset(params, 'y')
+  calibrating.value = params.has('calibrar')
+  pinPanel()
+  window.addEventListener('resize', pinPanel)
   document.addEventListener('contextmenu', blockContextMenu)
   window.addEventListener('wheel', blockZoomWheel, { passive: false })
-  if (new URLSearchParams(window.location.search).has('demo')) runDemo()
+  if (params.has('demo')) runDemo()
   else void refreshCount()
 })
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', fitPanel)
+  window.removeEventListener('resize', pinPanel)
+  resolutionQuery?.removeEventListener('change', pinPanel)
   document.removeEventListener('contextmenu', blockContextMenu)
   window.removeEventListener('wheel', blockZoomWheel)
   disposed = true
@@ -83,7 +109,10 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="led-stage">
-    <main class="led-panel" :style="{ '--panel-scale': panelScale }">
+    <main
+      class="led-panel"
+      :style="{ '--panel-scale': panelScale, '--panel-x': `${panelX}px`, '--panel-y': `${panelY}px` }"
+    >
       <LedWaveBackground />
       <section class="led-content" aria-labelledby="counter-title">
         <p class="counter-total" aria-live="off">
@@ -100,6 +129,13 @@ onBeforeUnmount(() => {
             : 'Conectando…' }}
         </span>
       </p>
+      <div v-if="calibrating" class="calibration" aria-hidden="true">
+        <span class="calibration__corner is-top-left" />
+        <span class="calibration__corner is-top-right" />
+        <span class="calibration__corner is-bottom-left" />
+        <span class="calibration__corner is-bottom-right" />
+        <span class="calibration__label">384×192 · x{{ offset.x }} y{{ offset.y }} · escala {{ Math.round(devicePixelRatio * 100) }}%</span>
+      </div>
     </main>
   </div>
 </template>
@@ -120,7 +156,7 @@ html.page-counter body {
   cursor: none;
 }
 
-/* Fills the display; the panel is centred and scaled inside it. */
+/* Fills the display; everything outside the captured 384×192 stays black. */
 .led-stage {
   position: fixed;
   inset: 0;
@@ -129,15 +165,17 @@ html.page-counter body {
 }
 
 /*
- * Laid out at the LED panel resolution (384×192), then scaled around its centre
- * to fit the window. With Windows display scaling above 100% the 384×192 output
- * has fewer CSS pixels, and the panel shrinks to fit instead of being cropped.
+ * Laid out at the LED panel resolution (384×192) and pinned at the capture
+ * origin. The 1/devicePixelRatio scale makes one layout pixel one physical
+ * pixel, so the panel covers exactly the 384×192 block the LED software reads.
+ * Never centre or fit it to the window: the capture area does not move.
  */
 .led-panel {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  translate: -50% -50%;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  translate: var(--panel-x, 0) var(--panel-y, 0);
   scale: var(--panel-scale, 1);
   width: var(--panel-width);
   height: var(--panel-height);
@@ -209,6 +247,40 @@ html.page-counter body {
 
 .connection-status.is-error {
   background: #ff3b1f;
+}
+
+/* `?calibrar`: 1px frame and corner blocks to line the page up with the LEDs. */
+.calibration {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  outline: 1px solid #ff0000;
+  outline-offset: -1px;
+  pointer-events: none;
+}
+
+.calibration__corner {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: #fff;
+}
+
+.calibration__corner.is-top-left { top: 0; left: 0; }
+.calibration__corner.is-top-right { top: 0; right: 0; }
+.calibration__corner.is-bottom-left { bottom: 0; left: 0; }
+.calibration__corner.is-bottom-right { right: 0; bottom: 0; }
+
+.calibration__label {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 2px 4px;
+  background: #000;
+  color: #fff;
+  font: 700 12px/1 system-ui, sans-serif;
+  text-transform: none;
+  white-space: nowrap;
 }
 
 .visually-hidden {

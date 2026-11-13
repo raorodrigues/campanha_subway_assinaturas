@@ -7,5 +7,7 @@
   "browser": "auto",
   "signatureScreen": "auto",
   "counterScreen": "auto",
+  "counterOffsetX": 0,
+  "counterOffsetY": 0,
   "forceDeviceScaleFactor": 1
 }

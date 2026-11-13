@@ -55,7 +55,21 @@ try {
     Write-KioskLog "kiosk.json 'counterPort' is obsolete and ignored: the counter is served at /counter."
   }
   $signatureUrl = 'http://127.0.0.1:{0}/' -f $config.signaturePort
-  $counterUrl = 'http://127.0.0.1:{0}/counter' -f $config.signaturePort
+  # The LED software captures 384x192 physical pixels at a fixed origin of the
+  # counter display; the page pins the panel there. Optional, default 0,0.
+  $counterOffset = @{ X = 0; Y = 0 }
+  foreach ($axis in @('X', 'Y')) {
+    $name = 'counterOffset' + $axis
+    if ($config.PSObject.Properties.Name -contains $name) {
+      $value = 0
+      if (-not [int]::TryParse([string] $config.$name, [ref] $value) -or $value -lt 0) {
+        throw "kiosk.json '$name' must be a whole number >= 0."
+      }
+      $counterOffset[$axis] = $value
+    }
+  }
+  $counterUrl = 'http://127.0.0.1:{0}/counter?x={1}&y={2}' -f $config.signaturePort, $counterOffset.X, $counterOffset.Y
+  Write-KioskLog "LED counter capture origin: $($counterOffset.X),$($counterOffset.Y)"
 
   # Optional so older kiosk.json files keep working; the server rejects invalid values.
   $countOffset = '0'
