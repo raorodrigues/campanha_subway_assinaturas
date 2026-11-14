@@ -246,7 +246,7 @@ html.page-counter body {
  * 58px slots, caption 275px wide, 15px between the two.
  */
 .counter-total {
-  --digit-count: 4;
+  --digit-count: 5;
   display: flex;
   margin: 0;
   color: #fff;

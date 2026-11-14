@@ -3,8 +3,8 @@
 // rolls down while the new one enters from above. Digits are keyed by
 // position from the right so units, tens, etc. keep their slot when the
 // number gains a digit. The panel always shows at least MIN_DIGITS digits,
-// zero-padded (4 → 0004).
-const MIN_DIGITS = 4
+// zero-padded (42 → 00042).
+const MIN_DIGITS = 5
 const props = defineProps<{ value: number }>()
 
 const digits = computed(() => {
