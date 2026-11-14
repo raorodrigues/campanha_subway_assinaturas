@@ -4,46 +4,8 @@ import { once } from 'node:events'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { spawn } from 'node:child_process'
 import { test } from 'node:test'
-import { fileURLToPath } from 'node:url'
-
-// Runs against the production build: `npm run build` first.
-// `env` entries set to null are removed from the inherited environment.
-async function startServer(databasePath, env = {}) {
-  const childEnv = { ...process.env, HOST: '127.0.0.1', PORT: '0', SIGNATURE_DB_PATH: databasePath }
-  delete childEnv.NUXT_SIGNATURE_COUNT_OFFSET
-  for (const [key, value] of Object.entries(env)) {
-    if (value === null) delete childEnv[key]
-    else childEnv[key] = value
-  }
-  const child = spawn(process.execPath, ['.output/server/index.mjs'], {
-    cwd: fileURLToPath(new URL('..', import.meta.url)),
-    env: childEnv,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-  let output = ''
-  child.stderr.on('data', chunk => { output += chunk.toString() })
-  const address = await new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      child.kill('SIGKILL')
-      reject(new Error(`Server startup timed out: ${output}`))
-    }, 10000)
-    child.stdout.on('data', (chunk) => {
-      output += chunk.toString()
-      const match = output.match(/http:\/\/127\.0\.0\.1:(\d+)/)
-      if (match) {
-        clearTimeout(timeout)
-        resolve(`http://127.0.0.1:${match[1]}`)
-      }
-    })
-    child.once('exit', (code) => {
-      clearTimeout(timeout)
-      reject(new Error(`Server exited with ${code}: ${output}`))
-    })
-  })
-  return { address, child }
-}
+import { readCount, startServer, submit, withServer } from './server.mjs'
 
 test('one server serves the kiosk, the LED counter page and the shared count', { timeout: 30000 }, async () => {
   const directory = mkdtempSync(join(tmpdir(), 'assinatura-counter-test-'))
@@ -92,30 +54,6 @@ test('one server serves the kiosk, the LED counter page and the shared count', {
     rmSync(directory, { recursive: true })
   }
 })
-
-async function submit(address) {
-  const response = await fetch(`${address}/api/signatures`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: randomUUID() }),
-  })
-  assert.equal(response.status, 200)
-  return response.json()
-}
-
-// Always stops the server, even when an assertion fails.
-async function withServer(databasePath, env, run) {
-  const { address, child } = await startServer(databasePath, env)
-  const exited = once(child, 'exit')
-  try {
-    await run(address)
-  } finally {
-    child.kill('SIGTERM')
-    await exited
-  }
-}
-
-const readCount = address => fetch(`${address}/api/signatures/count`).then(response => response.json())
 
 test('NUXT_SIGNATURE_COUNT_OFFSET is added to the shown total, never stored', { timeout: 30000 }, async () => {
   const directory = mkdtempSync(join(tmpdir(), 'assinatura-offset-test-'))

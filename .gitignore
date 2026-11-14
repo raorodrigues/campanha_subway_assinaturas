@@ -6,6 +6,10 @@
 # Client material: the full font package (the app ships only its 3 fonts) and confidential API documentation
 /subway.zip
 /Documentação API - Subway Frango com Catupiry.pdf
+/API_Count_Subway_Homolog.pdf
+
+# JWT for the online count API: copied by hand to C:\kiosk, never committed or packaged
+token.txt
 /kiosk-windows/dist/
 /kiosk-windows/.cache/
 

@@ -85,6 +85,9 @@ Faça com a conta do totem logada. Marque cada item.
 | `signatureCountdownSeconds` | `10` | Tempo total da sessão de assinatura. |
 | `signatureIdleTimeoutSeconds` | `5` | Volta ao início se ninguém começar a assinar. |
 | `signatureCountOffset` | `0` | Somado ao número do contador (ex.: assinaturas coletadas fora do totem). Não altera o banco. Inteiro ≥ 0; valor inválido impede o servidor de subir (veja `logs\assinatura.log`). |
+| `remoteCountUrl` | API de homologação | Endereço da API online de contagem. O número que ela devolve é somado ao contador a cada consulta. Vazio (`""`) desliga a função e o totem funciona 100% offline. |
+| `remoteCountIntervalSeconds` | `60` | Intervalo entre consultas à API. Inteiro de 1 a 86400. Se a API responder 429 (limite de requisições), o intervalo dobra até 10 min. |
+| `remoteCountTokenFile` | `token.txt` | Arquivo com o token JWT da API, relativo a `C:\kiosk`. Não vem no pacote: copie à mão. É relido a cada consulta, então trocar o token não exige reiniciar. |
 | `browser` | `auto` | `auto` (Chrome se instalado, senão Edge), `edge` ou `chrome`. |
 | `signatureScreen` / `counterScreen` | `auto` | `auto` usa a tela em retrato para a assinatura e a outra para o contador. Para fixar, use o número da tela mostrado em `kiosk.log` (ex.: `0`, `1`). |
 | `counterOffsetX` / `counterOffsetY` | `0` | Origem, em pixels físicos da tela do contador, da área que o software do painel LED captura. Inteiro ≥ 0. |
@@ -97,6 +100,7 @@ Faça com a conta do totem logada. Marque cada item.
 |---|---|---|
 | Fica em "Iniciando…" | Servidor não sobe | Veja `logs\assinatura.log`. Confira se `node\node.exe` existe. |
 | Sites abertos na tela trocada | Detecção automática | Fixe `signatureScreen`/`counterScreen` em `kiosk.json` pelos números do `kiosk.log`. |
+| Contador não soma as assinaturas online | Sem internet, token ausente ou expirado | Veja as linhas `[remote-count]` em `logs\assinatura.log`. Sem conexão, o painel continua com o último número recebido. `HTTP 401` = token inválido ou expirado (validade de 30 dias): peça um novo e substitua `C:\kiosk\token.txt`. |
 | Toque age na tela errada | Mapeamento do touch | Checklist: Configurações do Tablet PC > Configurar. |
 | Layout menor com bordas verdes | Escala/resolução da tela | Escala 100% e resolução 1080×1920 em retrato. |
 | Painel LED mostra só verde/preto, sem número | Contador fora da área capturada | Abra `http://127.0.0.1:3000/counter?calibrar` na tela do contador (veja a linha seguinte). Se a régua não começar no canto do painel, ajuste `counterOffsetX`/`counterOffsetY` para a origem configurada no software do painel. |

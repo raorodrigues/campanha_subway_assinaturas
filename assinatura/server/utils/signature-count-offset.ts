@@ -1,3 +1,5 @@
+import { getStoredRemoteCount } from './signature-store'
+
 // Signatures collected outside this kiosk, added to the total shown on the API
 // and the LED panel. Never stored in SQLite: changing it only changes the
 // display. Set with NUXT_SIGNATURE_COUNT_OFFSET (Nuxt parses the env value).
@@ -8,7 +10,9 @@ export function parseSignatureCountOffset(value: unknown): number {
   return value
 }
 
-export function withSignatureCountOffset(count: { total: number }) {
+// Shown total = signatures on this kiosk + last count from the online API
+// (0 when disabled or never reached) + the fixed offset.
+export async function withSignatureCountOffset(count: { total: number }) {
   const offset = parseSignatureCountOffset(useRuntimeConfig().signatureCountOffset)
-  return { total: count.total + offset }
+  return { total: count.total + await getStoredRemoteCount() + offset }
 }
