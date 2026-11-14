@@ -82,6 +82,28 @@ try {
   }
   Write-KioskLog "Signature count offset: $countOffset"
 
+  # Online count added to the panel (optional; empty URL = fully offline). The
+  # JWT stays in a file next to kiosk.json and is never written to the logs.
+  $remoteCountUrl = ''
+  if ($config.PSObject.Properties.Name -contains 'remoteCountUrl') { $remoteCountUrl = [string] $config.remoteCountUrl }
+  $remoteCountInterval = '60'
+  if ($config.PSObject.Properties.Name -contains 'remoteCountIntervalSeconds') {
+    $remoteCountInterval = [string] $config.remoteCountIntervalSeconds
+  }
+  $remoteCountTokenFile = 'token.txt'
+  if ($config.PSObject.Properties.Name -contains 'remoteCountTokenFile') {
+    $remoteCountTokenFile = [string] $config.remoteCountTokenFile
+  }
+  if (-not [System.IO.Path]::IsPathRooted($remoteCountTokenFile)) {
+    $remoteCountTokenFile = Join-Path $Root $remoteCountTokenFile
+  }
+  if ($remoteCountUrl.Trim()) {
+    Write-KioskLog "Online count: $remoteCountUrl every $remoteCountInterval s (token file: $remoteCountTokenFile)"
+    if (-not (Test-Path $remoteCountTokenFile)) { Write-KioskLog "WARNING: token file not found: $remoteCountTokenFile" }
+  } else {
+    Write-KioskLog 'Online count: off (remoteCountUrl empty).'
+  }
+
   # --- Node servers --------------------------------------------------------------
   $servers = @(
     @{
@@ -93,6 +115,9 @@ try {
         NUXT_PUBLIC_SIGNATURE_COUNTDOWN_SECONDS = [string] $config.signatureCountdownSeconds
         NUXT_PUBLIC_SIGNATURE_IDLE_TIMEOUT_SECONDS = [string] $config.signatureIdleTimeoutSeconds
         NUXT_SIGNATURE_COUNT_OFFSET = $countOffset
+        NUXT_REMOTE_COUNT_URL = $remoteCountUrl
+        NUXT_REMOTE_COUNT_INTERVAL_SECONDS = $remoteCountInterval
+        NUXT_REMOTE_COUNT_TOKEN_FILE = $remoteCountTokenFile
       }
       Process = $null
     }

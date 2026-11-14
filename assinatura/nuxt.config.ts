@@ -18,6 +18,11 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Added to the shown total (NUXT_SIGNATURE_COUNT_OFFSET); never stored.
     signatureCountOffset: 0,
+    // Online count added to the total (server/utils/remote-count.ts). Empty
+    // URL = off. The JWT lives in a file, never in the build or the browser.
+    remoteCountUrl: '',
+    remoteCountIntervalSeconds: 60,
+    remoteCountTokenFile: '',
     public: {
       signatureCountdownSeconds: 10,
       signatureIdleTimeoutSeconds: 5

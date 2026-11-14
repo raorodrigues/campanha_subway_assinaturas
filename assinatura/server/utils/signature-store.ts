@@ -35,6 +35,11 @@ async function openDatabase() {
       id TEXT PRIMARY KEY,
       created_at TEXT
     );
+    CREATE TABLE IF NOT EXISTS remote_signature_count (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      total INTEGER NOT NULL,
+      fetched_at TEXT NOT NULL
+    );
   `)
   addCreatedAtColumn(connection)
   return connection
@@ -67,6 +72,24 @@ function countSignatures(database: DatabaseSync) {
 
 export async function getSignatureCount() {
   return countSignatures(await getDatabase())
+}
+
+// Last count received from the campaign's online API (see remote-count.ts).
+// Kept on disk so a restart without internet still shows it instead of
+// dropping thousands of signatures from the panel. 0 until the first answer.
+export async function getStoredRemoteCount() {
+  const database = await getDatabase()
+  const row = database.prepare('SELECT total FROM remote_signature_count WHERE id = 1').get()
+  return row && typeof row.total === 'number' && Number.isSafeInteger(row.total) ? row.total : 0
+}
+
+export async function storeRemoteCount(total: number) {
+  const database = await getDatabase()
+  database.prepare(`
+    INSERT INTO remote_signature_count (id, total, fetched_at)
+    VALUES (1, ?, strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+    ON CONFLICT (id) DO UPDATE SET total = excluded.total, fetched_at = excluded.fetched_at
+  `).run(total)
 }
 
 export async function recordSignature(id: string) {
