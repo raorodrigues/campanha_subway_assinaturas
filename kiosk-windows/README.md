@@ -88,7 +88,7 @@ Faça com a conta do totem logada. Marque cada item.
 | `browser` | `auto` | `auto` (Chrome se instalado, senão Edge), `edge` ou `chrome`. |
 | `signatureScreen` / `counterScreen` | `auto` | `auto` usa a tela em retrato para a assinatura e a outra para o contador. Para fixar, use o número da tela mostrado em `kiosk.log` (ex.: `0`, `1`). |
 | `counterOffsetX` / `counterOffsetY` | `0` | Origem, em pixels físicos da tela do contador, da área que o software do painel LED captura. Inteiro ≥ 0. |
-| `counterWidth` / `counterHeight` | `384` / `192` | Tamanho, em pixels físicos, da área capturada pelo software do painel LED. O contador é esticado para preencher exatamente essa área, com qualquer escala do Windows. Descubra o valor com `?calibrar` (veja abaixo). Inteiro de 1 a 4096. |
+| `counterWidth` / `counterHeight` | `512` / `192` | Tamanho, em pixels físicos, da área capturada pelo software do painel LED. O contador é esticado para preencher exatamente essa área, com qualquer escala do Windows. Descubra o valor com `?calibrar` (veja abaixo). Inteiro de 1 a 4096. |
 | `forceDeviceScaleFactor` | `1` | Mantém o layout 1080×1920 em escala 1 mesmo com Windows em 125/150%. |
 
 ## Problemas comuns

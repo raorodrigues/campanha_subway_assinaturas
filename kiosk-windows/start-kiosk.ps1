@@ -56,9 +56,9 @@ try {
   }
   $signatureUrl = 'http://127.0.0.1:{0}/' -f $config.signaturePort
   # The LED software captures a block of physical pixels of the counter display
-  # (origin X,Y; size Width x Height, default 384x192) and stretches it over the
+  # (origin X,Y; size Width x Height, default 512x192) and stretches it over the
   # panel; the page fills exactly that block. All optional.
-  $counterCapture = [ordered]@{ OffsetX = 0; OffsetY = 0; Width = 384; Height = 192 }
+  $counterCapture = [ordered]@{ OffsetX = 0; OffsetY = 0; Width = 512; Height = 192 }
   foreach ($key in @($counterCapture.Keys)) {
     $name = 'counter' + $key
     if ($config.PSObject.Properties.Name -contains $name) {
