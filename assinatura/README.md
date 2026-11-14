@@ -73,6 +73,22 @@ Em outro aparelho da mesma rede, abra `http://<ip-do-computador>:3000`
 (no macOS: `ipconfig getifaddr en0`). Se a página não carregar, permita conexões
 de entrada para o Node.js no firewall do macOS.
 
+## Testar localmente (`npm run local`)
+
+Gera o build e sobe o servidor como no totem, em `http://127.0.0.1:3000`. Usa o
+Node 22 sozinho (procura em `~/.nvm`), mesmo que o terminal esteja em outra versão.
+Se existir `token.txt` na raiz do repositório, liga a contagem online com o URL e
+o intervalo de `kiosk-windows/kiosk.json`. As URLs úteis aparecem no terminal.
+Ctrl+C para parar.
+
+```bash
+npm run local                    # build + servidor, API ligada se houver token.txt
+npm run local -- --offline       # sem chamadas à API, só o SQLite local
+npm run local -- --no-build      # reaproveita o build atual (.output)
+npm run local -- --open          # abre o totem e o contador no navegador
+PORT=3001 npm run local          # outra porta
+```
+
 ## Sessões de assinatura e persistência
 
 Abrir a tela de assinatura inicia uma contagem regressiva configurada por
