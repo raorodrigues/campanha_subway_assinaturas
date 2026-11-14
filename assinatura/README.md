@@ -28,7 +28,7 @@ trabalho maior e estica-o sobre o painel inteiro. A página é desenhada em
 384×192 e esticada para preencher exatamente esse bloco (padrão 384×192 no canto
 superior esquerdo), compensando a escala do Windows e o zoom do navegador
 (`devicePixelRatio`). O resto da janela fica preto. O número tem sempre pelo
-menos 4 dígitos (4 → 0004). A página reproduz
+menos 5 dígitos (42 → 00042). A página reproduz
 `layouts/painel-led-contador-384x192px.mp4`: fundo de ondas em movimento, número
 com animação de odômetro e "JÁ ASSINARAM" em Subway Sans Cond Black.
 
