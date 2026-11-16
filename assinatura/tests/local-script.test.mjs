@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { describeToken, parseArgs, remoteCountSetup } from '../scripts/local.mjs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { describeToken, migrateLegacyDatabase, parseArgs, remoteCountSetup } from '../scripts/local.mjs'
 
 const NOW = new Date('2026-11-16T12:00:00Z')
 const jwt = (payload) => `eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify(payload)).toString('base64url')}.signature`
@@ -44,4 +47,27 @@ test('remoteCountSetup turns the online count on only with a token file and a UR
   assert.match(remoteCountSetup({ offline: false, tokenText: 'abc', kioskConfig: {}, tokenFile }).status, /remoteCountUrl vazio/)
   assert.equal(remoteCountSetup({ offline: false, tokenText: 'abc', kioskConfig: { remoteCountUrl: 'u' }, tokenFile })
     .env.NUXT_REMOTE_COUNT_INTERVAL_SECONDS, '60')
+})
+
+test('migrateLegacyDatabase copies the old database once and never overwrites the new one', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'assinatura-local-test-'))
+  try {
+    const from = join(directory, '.data', 'signatures.sqlite')
+    const to = join(directory, 'dados', 'signatures.sqlite')
+    assert.equal(migrateLegacyDatabase(from, to), false)
+
+    mkdirSync(join(directory, '.data'))
+    writeFileSync(from, 'old')
+    writeFileSync(`${from}-wal`, 'wal')
+    assert.equal(migrateLegacyDatabase(from, to), true)
+    assert.equal(readFileSync(to, 'utf8'), 'old')
+    assert.equal(readFileSync(`${to}-wal`, 'utf8'), 'wal')
+    assert.equal(readFileSync(from, 'utf8'), 'old')
+
+    writeFileSync(from, 'newer old')
+    assert.equal(migrateLegacyDatabase(from, to), false)
+    assert.equal(readFileSync(to, 'utf8'), 'old')
+  } finally {
+    rmSync(directory, { recursive: true })
+  }
 })

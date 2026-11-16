@@ -95,6 +95,22 @@ npm run local -- --open            # abre o totem e o contador no navegador
 npm run local -- --port=3001       # outra porta (padrão 3000)
 ```
 
+**Onde ficam as assinaturas:** na pasta `dados/` da **raiz do repositório** (ao
+lado de `assinatura/` e do `token.txt`, fora do git), que nenhum build, `git pull`
+ou `npm ci` toca:
+
+- `dados/signatures.sqlite`: o banco que o servidor usa;
+- `dados/assinaturas.csv`: uma linha por assinatura (`id;criado_em_utc;criado_em_local`,
+  separado por `;` para abrir direto no Excel em pt-BR).
+
+Os dois se completam: ao subir, o servidor junta o que falta em cada um. Se o
+banco sumir, ele é recriado a partir do CSV; se o CSV sumir, é regravado a partir
+do banco. Abra o CSV no Excel só para ler ou copie-o antes; se o Excel salvar por
+cima, as datas mudam de formato. Com o arquivo aberto no Excel, o Windows bloqueia
+a escrita: a assinatura entra no banco e vai para o CSV no próximo início. Na
+primeira vez, se ainda houver um banco antigo em `assinatura/.data/`, ele é
+copiado para `dados/` (o original fica onde está, como backup).
+
 Ctrl+C para parar. As linhas `[remote-count]` no terminal mostram cada mudança
 da contagem online (`online count received: N` = OK; `HTTP 401` = token inválido
 ou expirado; `no connection` = sem internet, o painel mantém o último número).
@@ -116,7 +132,10 @@ Só identificadores de sessão são salvos, nunca traços ou imagens da assinatu
 O SQLite guarda um UUID por sessão concluída (o que torna os reenvios
 idempotentes) e o horário de registro em `created_at` (UTC, ISO 8601). O total é
 calculado a partir dessas linhas. O banco fica em `.data/signatures.sqlite`, fora
-do build e ignorado pelo Git; defina `SIGNATURE_DB_PATH` para outro caminho.
+do build e ignorado pelo Git; defina `SIGNATURE_DB_PATH` para outro caminho
+(`npm run local` usa `../dados/`, veja acima). Ao lado do banco fica
+`assinaturas.csv`, uma cópia em texto de cada assinatura que o servidor usa para
+reconstruir o banco, se ele se perder (`SIGNATURE_CSV_PATH` muda o caminho).
 Para backup, use as ferramentas de backup do SQLite ou pare o servidor antes de
 copiar o banco e os arquivos `-wal`/`-shm`.
 
