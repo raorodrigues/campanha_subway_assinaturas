@@ -68,7 +68,7 @@ function resizeCanvas() {
 }
 
 const STROKE_COLOR = '#17684f'
-const STROKE_WIDTH = 3.5
+const STROKE_WIDTH = 7
 // The trail fades in this many opacity steps. Each step is one continuous
 // path, so the line has no overlapping joints (which showed up as dots).
 const FADE_STEPS = 24
