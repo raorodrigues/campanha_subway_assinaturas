@@ -75,19 +75,29 @@ de entrada para o Node.js no firewall do macOS.
 
 ## Testar localmente (`npm run local`)
 
-Gera o build e sobe o servidor como no totem, em `http://127.0.0.1:3000`. Usa o
-Node 22 sozinho (procura em `~/.nvm`), mesmo que o terminal esteja em outra versão.
-Se existir `token.txt` na raiz do repositório, liga a contagem online com o URL e
-o intervalo de `kiosk-windows/kiosk.json`. As URLs úteis aparecem no terminal.
-Ctrl+C para parar.
+Gera o build e sobe o servidor como no totem, em `http://127.0.0.1:3000`.
+Funciona igual no Windows (Prompt de Comando ou PowerShell), macOS e Linux, sem
+Git Bash, PowerShell script ou PM2. Se o terminal estiver num Node mais antigo,
+usa sozinho um Node 22 instalado pelo nvm / nvm-windows.
+
+**Contagem online:** coloque o token JWT num arquivo `token.txt` na **raiz do
+repositório** (ao lado das pastas `assinatura/` e `kiosk-windows/`; o arquivo
+nunca vai para o git). O URL e o intervalo vêm de `kiosk-windows/kiosk.json`. Ao
+subir, o terminal mostra se a contagem está ligada e até quando o token vale (ou
+avisa se está vazio ou expirado). Trocar o `token.txt` não exige reiniciar.
 
 ```bash
-npm run local                    # build + servidor, API ligada se houver token.txt
-npm run local -- --offline       # sem chamadas à API, só o SQLite local
-npm run local -- --no-build      # reaproveita o build atual (.output)
-npm run local -- --open          # abre o totem e o contador no navegador
-PORT=3001 npm run local          # outra porta
+npm install                        # só na primeira vez
+npm run local                      # build + servidor, API ligada se houver token.txt
+npm run local -- --offline         # sem chamadas à API, só o SQLite local
+npm run local -- --no-build        # reaproveita o build atual (.output)
+npm run local -- --open            # abre o totem e o contador no navegador
+npm run local -- --port=3001       # outra porta (padrão 3000)
 ```
+
+Ctrl+C para parar. As linhas `[remote-count]` no terminal mostram cada mudança
+da contagem online (`online count received: N` = OK; `HTTP 401` = token inválido
+ou expirado; `no connection` = sem internet, o painel mantém o último número).
 
 ## Sessões de assinatura e persistência
 
