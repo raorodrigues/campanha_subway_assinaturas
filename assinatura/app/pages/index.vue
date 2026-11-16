@@ -94,6 +94,7 @@ let autoRetryTimeout: Timer | null = null
 let recoveryTimeout: Timer | null = null
 // Holds decoded images so the browser keeps them ready for later screens.
 const preloadedImages: HTMLImageElement[] = []
+const sounds = useKioskSounds()
 
 function cancelTimer(timer: Timer | null): null {
   if (timer !== null) clearTimeout(timer)
@@ -176,6 +177,7 @@ function releaseSignButton() {
 function activateSignButton() {
   if (signButtonTimeout !== null || screen.value !== 'welcome') return
   isSignButtonPressed.value = true
+  sounds.play('button')
   // Keeps the pressed artwork visible briefly before switching screens.
   signButtonTimeout = setTimeout(() => {
     signButtonTimeout = null
@@ -225,6 +227,7 @@ async function submitSignature() {
     clearRecoveryTimers()
     submissionError.value = ''
     screen.value = 'thanks'
+    sounds.play('success')
   } catch (error) {
     if (sessionId !== submissionId) return
     console.error('Failed to persist signature count', error)
@@ -282,6 +285,7 @@ onMounted(() => {
   document.addEventListener('contextmenu', blockContextMenu)
   window.addEventListener('wheel', blockZoomWheel, { passive: false })
   preloadImages()
+  sounds.preload()
   // The first welcome plays its entrance through <Transition appear>; its after-enter starts attract mode.
   isReady.value = true
 })
@@ -294,6 +298,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('contextmenu', blockContextMenu)
   window.removeEventListener('wheel', blockZoomWheel)
   preloadedImages.length = 0
+  sounds.dispose()
 })
 </script>
 

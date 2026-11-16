@@ -50,6 +50,14 @@ test('one server serves the kiosk, the LED counter page and the shared count', {
       }
     }
 
+    // UI sounds (button tap, signature saved), served locally like the videos.
+    for (const name of ['button', 'success']) {
+      const sound = await fetch(`${address}/audio/${name}.mp3`)
+      assert.equal(sound.status, 200, name)
+      assert.match(sound.headers.get('content-type') ?? '', /^audio\/mpeg/, name)
+      await sound.arrayBuffer()
+    }
+
     const count = () => fetch(`${address}/api/signatures/count`).then(response => response.json())
     assert.deepEqual(await count(), { total: 0 })
     const submitted = await fetch(`${address}/api/signatures`, {
