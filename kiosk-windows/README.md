@@ -38,9 +38,11 @@ não há módulos nativos, então a mesma pasta `.output` roda no Windows.
 
 **Contagem existente:** para levar assinaturas já feitas, copie `signatures.sqlite`
 (e `-wal`/`-shm`, se existirem), com o servidor de origem **parado**, para
-`C:\kiosk\data\`. Basta também só o `assinaturas.csv`: o banco é recriado a partir dele.
-Na mesma pasta fica `assinaturas.csv` (uma linha por assinatura, abre no Excel);
-ao atualizar o quiosque, nunca apague `C:\kiosk\data\`.
+`C:\kiosk\data\`. Copiar só o `assinaturas.csv` também serve: o banco é recriado
+a partir dele.
+
+**Planilha:** `C:\kiosk\data\assinaturas.csv` tem uma linha por assinatura e abre
+no Excel. Ao atualizar o quiosque, nunca apague `C:\kiosk\data\`.
 
 ## 3. Checklist do equipamento (manual, no hardware final)
 
