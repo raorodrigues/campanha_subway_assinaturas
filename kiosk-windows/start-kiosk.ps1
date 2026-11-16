@@ -41,7 +41,7 @@ if (-not $mutex.WaitOne(0)) {
 try {
   # --- Configuration -----------------------------------------------------------
   $config = Get-Content -Path (Join-Path $Root 'kiosk.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-  foreach ($required in @('host', 'signaturePort', 'signatureCountdownSeconds',
+  foreach ($required in @('host', 'signaturePort',
       'signatureIdleTimeoutSeconds', 'browser', 'signatureScreen', 'counterScreen', 'forceDeviceScaleFactor')) {
     if (-not ($config.PSObject.Properties.Name -contains $required)) {
       throw "kiosk.json is missing '$required'."
@@ -84,6 +84,17 @@ try {
 
   # Online count added to the panel (optional; empty URL = fully offline). The
   # JWT stays in a file next to kiosk.json and is never written to the logs.
+  # Optional, so a kiosk.json from an older package still starts (its
+  # signatureCountdownSeconds is ignored: a pause now ends the signature).
+  $finishPause = '2'
+  if ($config.PSObject.Properties.Name -contains 'signatureFinishPauseSeconds') {
+    $finishPause = [string] $config.signatureFinishPauseSeconds
+  }
+  $maxSeconds = '30'
+  if ($config.PSObject.Properties.Name -contains 'signatureMaxSeconds') {
+    $maxSeconds = [string] $config.signatureMaxSeconds
+  }
+
   $remoteCountUrl = ''
   if ($config.PSObject.Properties.Name -contains 'remoteCountUrl') { $remoteCountUrl = [string] $config.remoteCountUrl }
   $remoteCountInterval = '60'
@@ -112,8 +123,9 @@ try {
       Env = @{
         PORT = [string] $config.signaturePort
         SIGNATURE_DB_PATH = Join-Path $DataDir 'signatures.sqlite'
-        NUXT_PUBLIC_SIGNATURE_COUNTDOWN_SECONDS = [string] $config.signatureCountdownSeconds
         NUXT_PUBLIC_SIGNATURE_IDLE_TIMEOUT_SECONDS = [string] $config.signatureIdleTimeoutSeconds
+        NUXT_PUBLIC_SIGNATURE_FINISH_PAUSE_SECONDS = $finishPause
+        NUXT_PUBLIC_SIGNATURE_MAX_SECONDS = $maxSeconds
         NUXT_SIGNATURE_COUNT_OFFSET = $countOffset
         NUXT_REMOTE_COUNT_URL = $remoteCountUrl
         NUXT_REMOTE_COUNT_INTERVAL_SECONDS = $remoteCountInterval

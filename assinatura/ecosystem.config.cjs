@@ -21,8 +21,9 @@ module.exports = {
       SIGNATURE_DB_PATH: process.env.SIGNATURE_DB_PATH || resolve(__dirname, '.data/signatures.sqlite'),
       // Added to the shown total (signatures collected elsewhere); never stored.
       NUXT_SIGNATURE_COUNT_OFFSET: process.env.NUXT_SIGNATURE_COUNT_OFFSET || '0',
-      NUXT_PUBLIC_SIGNATURE_COUNTDOWN_SECONDS: process.env.NUXT_PUBLIC_SIGNATURE_COUNTDOWN_SECONDS || '10',
       NUXT_PUBLIC_SIGNATURE_IDLE_TIMEOUT_SECONDS: process.env.NUXT_PUBLIC_SIGNATURE_IDLE_TIMEOUT_SECONDS || '5',
+      NUXT_PUBLIC_SIGNATURE_FINISH_PAUSE_SECONDS: process.env.NUXT_PUBLIC_SIGNATURE_FINISH_PAUSE_SECONDS || '2',
+      NUXT_PUBLIC_SIGNATURE_MAX_SECONDS: process.env.NUXT_PUBLIC_SIGNATURE_MAX_SECONDS || '30',
     },
   }],
 }

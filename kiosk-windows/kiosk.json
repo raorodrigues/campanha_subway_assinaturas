@@ -1,8 +1,9 @@
 {
   "host": "127.0.0.1",
   "signaturePort": 3000,
-  "signatureCountdownSeconds": 10,
   "signatureIdleTimeoutSeconds": 5,
+  "signatureFinishPauseSeconds": 2,
+  "signatureMaxSeconds": 30,
   "signatureCountOffset": 0,
   "remoteCountUrl": "https://lpsubwayfrango.umstudiocode.com.br/api/v1/signatures/count",
   "remoteCountIntervalSeconds": 60,
