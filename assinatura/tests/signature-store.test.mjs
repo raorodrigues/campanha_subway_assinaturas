@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -95,6 +95,79 @@ test('a database created before created_at existed is migrated without losing ro
     } finally {
       database.close()
     }
+  } finally {
+    rmSync(directory, { recursive: true })
+  }
+})
+
+const csvIds = (path) => readFileSync(path, 'utf8').trim().split('\n').slice(1).map((line) => line.split(';')[0])
+
+test('every new signature is also written to assinaturas.csv next to the database, once', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'assinatura-store-test-'))
+  try {
+    const path = join(directory, 'signatures.sqlite')
+    const csv = join(directory, 'assinaturas.csv')
+    const id = randomUUID()
+    runStore(path, id)
+    runStore(path, id)
+    const lines = readFileSync(csv, 'utf8').trim().split('\n')
+    assert.equal(lines[0], 'id;criado_em_utc;criado_em_local')
+    assert.equal(lines.length, 2)
+    const [csvId, utc, local] = lines[1].split(';')
+    assert.equal(csvId, id)
+    assert.match(utc, ISO_UTC)
+    assert.match(local, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+  } finally {
+    rmSync(directory, { recursive: true })
+  }
+})
+
+test('a lost database is rebuilt from the CSV, and a lost CSV from the database', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'assinatura-store-test-'))
+  try {
+    const path = join(directory, 'signatures.sqlite')
+    const csv = join(directory, 'assinaturas.csv')
+    const ids = [randomUUID(), randomUUID()]
+    for (const id of ids) runStore(path, id)
+
+    for (const file of [path, `${path}-wal`, `${path}-shm`]) rmSync(file, { force: true })
+    assert.deepEqual(runStore(path), { total: 2 })
+
+    rmSync(csv)
+    assert.deepEqual(runStore(path), { total: 2 })
+    assert.deepEqual(csvIds(csv).sort(), [...ids].sort())
+  } finally {
+    rmSync(directory, { recursive: true })
+  }
+})
+
+test('rows only in the CSV and rows only in the database are merged on start', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'assinatura-store-test-'))
+  try {
+    const path = join(directory, 'signatures.sqlite')
+    const csv = join(directory, 'assinaturas.csv')
+    const inDatabase = randomUUID()
+    runStore(path, inDatabase)
+    const onlyInCsv = randomUUID()
+    writeFileSync(csv, `id;criado_em_utc;criado_em_local\r\n${onlyInCsv};2026-11-13T15:14:49.903Z;\r\n`)
+    assert.deepEqual(runStore(path), { total: 2 })
+    assert.deepEqual(csvIds(csv).map((id) => id.trim()).sort(), [inDatabase, onlyInCsv].sort())
+  } finally {
+    rmSync(directory, { recursive: true })
+  }
+})
+
+test('SIGNATURE_CSV_PATH puts the CSV elsewhere', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'assinatura-store-test-'))
+  try {
+    const csv = join(directory, 'outro', 'lista.csv')
+    const result = spawnSync(process.execPath, [
+      '--experimental-strip-types', '--input-type=module', '-e',
+      `import { recordSignature } from ${JSON.stringify(storeUrl)}; await recordSignature(${JSON.stringify(randomUUID())});`,
+    ], { env: { ...process.env, SIGNATURE_DB_PATH: join(directory, 'db.sqlite'), SIGNATURE_CSV_PATH: csv }, encoding: 'utf8' })
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(existsSync(csv))
+    assert.ok(!existsSync(join(directory, 'assinaturas.csv')))
   } finally {
     rmSync(directory, { recursive: true })
   }

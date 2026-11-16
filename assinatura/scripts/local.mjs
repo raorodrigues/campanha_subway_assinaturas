@@ -7,8 +7,10 @@
 //   npm run local -- --open          also open the kiosk and the LED counter
 //   npm run local -- --port=3001     other port (or PORT=3001; default 3000)
 // Ctrl+C stops the server.
+// Signatures live in ../dados (repo root, outside the app and git): the SQLite
+// database plus assinaturas.csv. SIGNATURE_DB_PATH still overrides.
 import { spawn } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
 import { createServer } from 'node:net'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
@@ -18,6 +20,8 @@ const APP_DIR = fileURLToPath(new URL('..', import.meta.url))
 const REPO_DIR = dirname(APP_DIR)
 export const TOKEN_FILE = join(REPO_DIR, 'token.txt')
 const KIOSK_CONFIG = join(REPO_DIR, 'kiosk-windows', 'kiosk.json')
+export const DATA_DIR = join(REPO_DIR, 'dados')
+const LEGACY_DATABASE = join(APP_DIR, '.data', 'signatures.sqlite')
 const MIN_NODE_MAJOR = 22 // node:sqlite
 
 export function parseArgs(argv) {
@@ -66,6 +70,18 @@ export function remoteCountSetup({ offline, tokenText, kioskConfig, tokenFile })
     },
     status: `ligada (${url}, a cada ${interval} s)`,
   }
+}
+
+// Copies the database that older versions kept in assinatura/.data, once: only
+// when the new location has none. The server is not running yet, so the -wal and
+// -shm files are copied with it. The old copy stays in place as a backup.
+export function migrateLegacyDatabase(from, to) {
+  if (existsSync(to) || !existsSync(from)) return false
+  mkdirSync(dirname(to), { recursive: true })
+  for (const suffix of ['', '-wal', '-shm']) {
+    if (existsSync(from + suffix)) copyFileSync(from + suffix, to + suffix)
+  }
+  return true
 }
 
 const say = (message) => console.log(`==> ${message}`)
@@ -189,6 +205,16 @@ async function main() {
     else console.warn(`AVISO: ${token.message}`)
   }
 
+  const databasePath = process.env.SIGNATURE_DB_PATH
+    ? resolve(APP_DIR, process.env.SIGNATURE_DB_PATH)
+    : join(DATA_DIR, 'signatures.sqlite')
+  if (!process.env.SIGNATURE_DB_PATH && migrateLegacyDatabase(LEGACY_DATABASE, databasePath)) {
+    say(`Banco copiado de ${LEGACY_DATABASE} para ${databasePath}`)
+  }
+  const csvPath = process.env.SIGNATURE_CSV_PATH
+    ? resolve(APP_DIR, process.env.SIGNATURE_CSV_PATH)
+    : join(dirname(databasePath), 'assinaturas.csv')
+
   const base = `http://${host}:${port}`
   console.log(`
   Totem (assinatura):  ${base}/
@@ -196,14 +222,15 @@ async function main() {
   Contador demo:       ${base}/counter?w=512&h=192&demo
   Régua de calibração: ${base}/counter?calibrar
   Total (JSON):        ${base}/api/signatures/count
-  Banco:               ${join(APP_DIR, '.data', 'signatures.sqlite')}
+  Banco:               ${databasePath}
+  Planilha (CSV):      ${csvPath}
 
   Ctrl+C para parar.
 `)
 
   // Only the online-count settings come from here; anything else set in the
   // shell (e.g. NUXT_SIGNATURE_COUNT_OFFSET) still applies.
-  const env = { ...process.env, HOST: host, PORT: port, ...remote.env }
+  const env = { ...process.env, HOST: host, PORT: port, SIGNATURE_DB_PATH: databasePath, SIGNATURE_CSV_PATH: csvPath, ...remote.env }
   if (!remote.env.NUXT_REMOTE_COUNT_URL) {
     for (const key of ['NUXT_REMOTE_COUNT_URL', 'NUXT_REMOTE_COUNT_TOKEN_FILE', 'NUXT_REMOTE_COUNT_INTERVAL_SECONDS']) delete env[key]
   }
