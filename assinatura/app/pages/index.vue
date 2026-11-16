@@ -20,14 +20,11 @@ const KIOSK_HEIGHT = 1920
 // happens in an inert <template>, where Chrome rejects a <video> for good
 // ("Media load rejected by URL safety check"). See reloadFoodVideos().
 //
-// `start` offsets the sandwich (12 s there and back) so it does not move in
-// step with the textures. Chicken and Catupiry® stay in sync as delivered: the
-// agency animated them as a pair, moving in opposite directions.
-// Each poster is the frame at its `start`.
+// Played as the agency delivered them: 6 s each, looped, all from frame 0.
 const FOOD_VIDEOS = {
-  lanche: { src: '/videos/lanche.webm', poster: '/videos/lanche-poster.webp', start: 4 },
-  frango: { src: '/videos/frango.webm', poster: '/videos/frango-poster.webp', start: 0 },
-  catupiry: { src: '/videos/catupiry.webm', poster: '/videos/catupiry-poster.webp', start: 0 },
+  lanche: { src: '/videos/lanche.webm', poster: '/videos/lanche-poster.webp' },
+  frango: { src: '/videos/frango.webm', poster: '/videos/frango-poster.webp' },
+  catupiry: { src: '/videos/catupiry.webm', poster: '/videos/catupiry-poster.webp' },
 } as const
 const KIOSK_IMAGES = [
   '/images/bg.webp',
@@ -272,12 +269,6 @@ const foodRef = ref<HTMLElement | null>(null)
 // <template>, so its videos are parsed in an inert document and Chrome rejects
 // them before Vue moves them into the page (nothing is even requested). Loading
 // them again once they are live fixes it; later welcomes are built live.
-// Runs on every load (also the reload above), so each welcome starts staggered.
-function startFoodVideoAt(event: Event, seconds: number) {
-  const video = event.target as HTMLVideoElement
-  if (seconds > 0) video.currentTime = seconds
-}
-
 function reloadFoodVideos() {
   for (const video of foodRef.value?.querySelectorAll('video') ?? []) {
     if (video.error || video.networkState === HTMLMediaElement.NETWORK_EMPTY) video.load()
@@ -351,10 +342,9 @@ onBeforeUnmount(() => {
           <!--
             Each half enters and leaves on its own side. Inside, the agency's
             videos (fatiado/lanche|frango|catupiry.webm, rendered at their layout
-            position on a 1080x1920 frame), cropped to each block. Chicken and
-            Catupiry® end on their first frame and loop cleanly; the sandwich
-            glides one way, so its file plays forwards then backwards (12 s).
-            The poster (first frame) shows until the video starts.
+            position on a 1080x1920 frame), cropped to each block and otherwise
+            unchanged: 6 s, looped. The poster (first frame) shows until the
+            video starts.
           -->
           <div ref="foodRef" class="welcome-screen__food" aria-hidden="true">
             <div class="welcome-screen__food-left m m-left">
@@ -362,7 +352,6 @@ onBeforeUnmount(() => {
                 class="food-video food-video--lanche"
                 :src="FOOD_VIDEOS.lanche.src"
                 :poster="FOOD_VIDEOS.lanche.poster"
-                @loadedmetadata="startFoodVideoAt($event, FOOD_VIDEOS.lanche.start)"
                 autoplay muted loop playsinline preload="auto"
                 disablepictureinpicture disableremoteplayback tabindex="-1"
               />
@@ -372,7 +361,6 @@ onBeforeUnmount(() => {
                 class="food-video food-video--catupiry"
                 :src="FOOD_VIDEOS.catupiry.src"
                 :poster="FOOD_VIDEOS.catupiry.poster"
-                @loadedmetadata="startFoodVideoAt($event, FOOD_VIDEOS.catupiry.start)"
                 autoplay muted loop playsinline preload="auto"
                 disablepictureinpicture disableremoteplayback tabindex="-1"
               />
@@ -380,7 +368,6 @@ onBeforeUnmount(() => {
                 class="food-video food-video--frango"
                 :src="FOOD_VIDEOS.frango.src"
                 :poster="FOOD_VIDEOS.frango.poster"
-                @loadedmetadata="startFoodVideoAt($event, FOOD_VIDEOS.frango.start)"
                 autoplay muted loop playsinline preload="auto"
                 disablepictureinpicture disableremoteplayback tabindex="-1"
               />
