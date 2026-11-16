@@ -2,6 +2,7 @@
 /**/.DS_Store
 /fatiado/
 /layouts/
+/audio/
 
 # Client material: the full font package (the app ships only its 3 fonts) and confidential API documentation
 /subway.zip
