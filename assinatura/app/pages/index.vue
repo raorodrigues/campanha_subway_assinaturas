@@ -341,7 +341,6 @@ onBeforeUnmount(() => {
           >
             <span class="welcome-screen__button-face">
               Clique e assine
-              <span class="welcome-screen__button-tap" aria-hidden="true" />
               <img class="welcome-screen__button-hand" src="/images/maozinha-branca.webp" alt="" draggable="false">
             </span>
           </button>
@@ -568,22 +567,6 @@ html.page-signature {
   width: 143px;
   height: 124px;
   max-width: none;
-  pointer-events: none;
-  /* The fingertip, so the press squash keeps the tip on the button corner. */
-  transform-origin: 16px 16px;
-}
-
-/* Ring that spreads from the fingertip when the hand presses (motion.css). */
-.welcome-screen__button-tap {
-  position: absolute;
-  top: 144px;
-  left: 763px;
-  width: 72px;
-  height: 72px;
-  margin: -36px 0 0 -36px;
-  border: 5px solid var(--kiosk-white);
-  border-radius: 50%;
-  opacity: 0;
   pointer-events: none;
 }
 
