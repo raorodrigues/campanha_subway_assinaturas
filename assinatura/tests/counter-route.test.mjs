@@ -39,6 +39,17 @@ test('one server serves the kiosk, the LED counter page and the shared count', {
       await video.arrayBuffer()
     }
 
+    // The food blocks play the agency's videos, each with its poster frame.
+    for (const name of ['lanche', 'frango', 'catupiry']) {
+      assert.match(kioskHtml, new RegExp(`<video[^>]*src="/videos/${name}\\.webm"[^>]*poster="/videos/${name}-poster\\.webp"`), name)
+      for (const [path, type] of [[`/videos/${name}.webm`, /^video\/webm/], [`/videos/${name}-poster.webp`, /^image\/webp/]]) {
+        const asset = await fetch(`${address}${path}`)
+        assert.equal(asset.status, 200, path)
+        assert.match(asset.headers.get('content-type') ?? '', type, path)
+        await asset.arrayBuffer()
+      }
+    }
+
     const count = () => fetch(`${address}/api/signatures/count`).then(response => response.json())
     assert.deepEqual(await count(), { total: 0 })
     const submitted = await fetch(`${address}/api/signatures`, {
