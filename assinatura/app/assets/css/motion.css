@@ -27,6 +27,8 @@
   --m-pop-scale: 0.9;
   --m-line-width: 0.006; /* box collapsed to a ~5px vertical line */
   --m-attract-period: 2.4s;
+  --parallax-sandwich-period: 15s; /* 7.5 s gliding in as in the reference + 7.5 s back */
+  --parallax-texture-period: 6s; /* one way; the textures then drift back */
 }
 
 /* ------------------------------ Timeline map ------------------------------ */
@@ -42,6 +44,8 @@
 /* First-version timing: each photo slides 64px from its own side with a fade. */
 .welcome-screen__food-left,
 .welcome-screen__food-right { --in-at: 100ms; --in-dur: 300ms; --out-dur: 160ms; }
+/* The Catupiry® seal pops in once its photo has arrived (as in the reference). */
+.food-seal { --in-at: 380ms; --in-dur: 420ms; --out-dur: 160ms; --m-pop-scale: 0.6; }
 /* Pops in while the headline is still appearing; tappable from that moment. */
 .welcome-screen__button { --in-at: 700ms; --in-dur: 380ms; --out-dur: 180ms; }
 
@@ -135,6 +139,33 @@
   .welcome-screen__button.is-pressed .welcome-screen__button-face {
     animation: none;
   }
+
+  /*
+   * Parallax on the welcome photos, measured on layouts/referencia_parallax_fotos.mp4
+   * (sizes scaled to this block, 461 vs 741px tall):
+   * - the chicken drifts down and the Catupiry® drifts up, about 3.5x faster,
+   *   each inside its own band; they then drift back (the welcome stays up for
+   *   long, the reference plays once);
+   * - the sandwich and its shadow glide left and slow down into the layout
+   *   position (the reference's 7.5 s ease-out), then ease back;
+   * - the seal stays still in front.
+   */
+  .food-sandwich,
+  .food-texture img {
+    will-change: transform;
+  }
+
+  .food-sandwich {
+    transform-origin: 30% 60%;
+    animation: m-parallax-sandwich var(--parallax-sandwich-period) linear infinite;
+  }
+
+  .food-texture img {
+    animation: var(--parallax-texture-period) cubic-bezier(0.37, 0, 0.63, 1) infinite alternate;
+  }
+
+  .food-texture--frango img { animation-name: m-parallax-chicken; }
+  .food-texture--catupiry img { animation-name: m-parallax-catupiry; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -241,4 +272,31 @@
   0% { color: var(--kiosk-yellow); }
   55% { color: var(--kiosk-white); }
   78% { color: var(--kiosk-yellow); }
+}
+
+/*
+ * Parallax drift (welcome photos). The layout position is where each layer
+ * rests; distances fit the spare image the PSD has in each layer.
+ */
+@keyframes m-parallax-sandwich {
+  0% {
+    transform: translate(128px, -12px) scale(1.03);
+    animation-timing-function: cubic-bezier(0.33, 1, 0.68, 1); /* ease-out, as measured */
+  }
+  50% {
+    transform: none;
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  100% { transform: translate(128px, -12px) scale(1.03); }
+}
+
+/* Down 56px while the Catupiry® goes up 200px (the reference's 1 : 3.5). */
+@keyframes m-parallax-chicken {
+  from { transform: none; }
+  to { transform: translateY(56px); }
+}
+
+@keyframes m-parallax-catupiry {
+  from { transform: translateY(200px); }
+  to { transform: none; }
 }
