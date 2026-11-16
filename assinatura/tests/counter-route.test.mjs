@@ -26,7 +26,7 @@ test('one server serves the kiosk, the LED counter page and the shared count', {
     assert.match(kioskHtml, /width=1080/)
     // Live text in the official font, not the old text artwork.
     assert.match(kioskHtml, /PATRIMÔNIO/)
-    assert.match(kioskHtml, /Assine aqui/)
+    assert.match(kioskHtml, /Clique e assine/)
     assert.doesNotMatch(kioskHtml, /texto-eleja|botao-assine/)
 
     // Both screens loop the agency's background animation, served locally.
