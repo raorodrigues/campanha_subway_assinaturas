@@ -16,12 +16,19 @@ const ERROR_RECOVERY_TIMEOUT = 15000
 const SUBMISSION_ERROR_MESSAGE = 'Não foi possível registrar a assinatura. Toque em “Tentar novamente”.'
 const KIOSK_WIDTH = 1080
 const KIOSK_HEIGHT = 1920
+// Bound with :src so Vue never builds the block from an HTML string: that
+// happens in an inert <template>, where Chrome rejects a <video> for good
+// ("Media load rejected by URL safety check"). See reloadFoodVideos().
+const FOOD_VIDEOS = {
+  lanche: { src: '/videos/lanche.webm', poster: '/videos/lanche-poster.webp' },
+  frango: { src: '/videos/frango.webm', poster: '/videos/frango-poster.webp' },
+  catupiry: { src: '/videos/catupiry.webm', poster: '/videos/catupiry-poster.webp' },
+} as const
 const KIOSK_IMAGES = [
   '/images/bg.webp',
-  '/images/parallax/sombra.webp',
-  '/images/parallax/sanduiche.webp',
-  '/images/parallax/frango.webp',
-  '/images/parallax/catupiry.webp',
+  FOOD_VIDEOS.lanche.poster,
+  FOOD_VIDEOS.frango.poster,
+  FOOD_VIDEOS.catupiry.poster,
   '/images/parallax/selo.webp',
   '/images/box-assinatura.webp',
   '/images/maozinha.webp',
@@ -254,7 +261,20 @@ function abandonSubmission() {
 
 /* --------------------------------- Lifecycle --------------------------------- */
 
+const foodRef = ref<HTMLElement | null>(null)
+
+// With <Transition appear>, the server sends the first welcome inside a
+// <template>, so its videos are parsed in an inert document and Chrome rejects
+// them before Vue moves them into the page (nothing is even requested). Loading
+// them again once they are live fixes it; later welcomes are built live.
+function reloadFoodVideos() {
+  for (const video of foodRef.value?.querySelectorAll('video') ?? []) {
+    if (video.error || video.networkState === HTMLMediaElement.NETWORK_EMPTY) video.load()
+  }
+}
+
 onMounted(() => {
+  reloadFoodVideos()
   updateKioskScale()
   window.addEventListener('resize', updateKioskScale)
   document.addEventListener('contextmenu', blockContextMenu)
@@ -318,24 +338,38 @@ onBeforeUnmount(() => {
           </button>
 
           <!--
-            Each half enters and leaves on its own side. Inside, the layers of
-            the layout PSD drift at different speeds, as in
-            layouts/referencia_parallax_fotos.mp4 (parallax, motion.css).
+            Each half enters and leaves on its own side. Inside, the agency's
+            videos (fatiado/lanche|frango|catupiry.webm, rendered at their layout
+            position on a 1080x1920 frame), cropped to each block. Chicken and
+            Catupiry® end on their first frame and loop cleanly; the sandwich
+            glides one way, so its file plays forwards then backwards (12 s).
+            The poster (first frame) shows until the video starts.
           -->
-          <div class="welcome-screen__food" aria-hidden="true">
+          <div ref="foodRef" class="welcome-screen__food" aria-hidden="true">
             <div class="welcome-screen__food-left m m-left">
-              <div class="food-sandwich">
-                <img class="food-sandwich__shadow" src="/images/parallax/sombra.webp" alt="" draggable="false">
-                <img class="food-sandwich__photo" src="/images/parallax/sanduiche.webp" alt="" draggable="false">
-              </div>
+              <video
+                class="food-video food-video--lanche"
+                :src="FOOD_VIDEOS.lanche.src"
+                :poster="FOOD_VIDEOS.lanche.poster"
+                autoplay muted loop playsinline preload="auto"
+                disablepictureinpicture disableremoteplayback tabindex="-1"
+              />
             </div>
             <div class="welcome-screen__food-right m m-right">
-              <div class="food-texture food-texture--catupiry">
-                <img src="/images/parallax/catupiry.webp" alt="" draggable="false">
-              </div>
-              <div class="food-texture food-texture--frango">
-                <img src="/images/parallax/frango.webp" alt="" draggable="false">
-              </div>
+              <video
+                class="food-video food-video--catupiry"
+                :src="FOOD_VIDEOS.catupiry.src"
+                :poster="FOOD_VIDEOS.catupiry.poster"
+                autoplay muted loop playsinline preload="auto"
+                disablepictureinpicture disableremoteplayback tabindex="-1"
+              />
+              <video
+                class="food-video food-video--frango"
+                :src="FOOD_VIDEOS.frango.src"
+                :poster="FOOD_VIDEOS.frango.poster"
+                autoplay muted loop playsinline preload="auto"
+                disablepictureinpicture disableremoteplayback tabindex="-1"
+              />
               <img class="food-seal m m-pop" src="/images/parallax/selo.webp" alt="" draggable="false">
             </div>
           </div>
@@ -569,73 +603,39 @@ html.page-signature {
 }
 
 /*
- * Layers exported from layouts/MUB_interativo_assinatura.psd at their layout
- * positions (block top = 1175px, right half from x = 540px). At rest the
- * block matches the layout; the drift is in motion.css.
+ * Block videos. Each file holds only the full-colour part of the agency's
+ * frame (its 1–2px dark edges are cut off), stretched by at most 1% to fill
+ * its box: chicken 1175–1418px, Catupiry® 1418–1637px, under the chicken by 1px.
  */
 .welcome-screen__food img {
   position: absolute;
   max-width: none;
 }
 
-/* The sandwich and its shadow move as one. */
-.food-sandwich {
-  position: absolute;
-  inset: 0;
-}
-
-/* PSD "SOMBRA" (multiply on the yellow). */
-.food-sandwich__shadow {
-  top: 293px;
-  left: -561px;
-  width: 1268px;
-  height: 141px;
-  mix-blend-mode: multiply;
-}
-
-/* PSD "SANDUICHE": only its right end shows; the file holds the whole sandwich at 2x. */
-.food-sandwich__photo {
-  top: 58.5px;
-  left: -400px;
-  width: 928px;
-  height: 341.5px;
-}
-
-/* Chicken on top (PSD 1174–1421px), Catupiry® below (1416–1637px). */
-.food-texture {
+.food-video {
   position: absolute;
   left: 0;
+  display: block;
   width: 100%;
-  overflow: hidden;
+  object-fit: fill;
 }
 
-.food-texture--frango {
+.food-video--lanche {
   top: 0;
-  height: 246px;
+  height: 100%;
 }
 
-/* Whole PSD layer (1114–1433px): 60px spare above the band for the drift down. */
-.food-texture--frango img {
-  top: -61px;
-  left: -71px;
-  width: 611px;
-  height: 319px;
+.food-video--frango {
+  top: 0;
+  height: 244px;
 }
 
-.food-texture--catupiry {
-  top: 241px;
+.food-video--catupiry {
+  top: 243px;
   bottom: 0;
 }
 
-/* PSD layer rows 1100–1650px: 316px spare above the band for the drift up. */
-.food-texture--catupiry img {
-  top: -316px;
-  left: -70px;
-  width: 610px;
-  height: 550px;
-}
-
-/* PSD "AF_CATUPIRY_SELO": stays still in front of the moving photos. */
+/* PSD "AF_CATUPIRY_SELO": stays still in front of the videos. */
 .food-seal {
   top: 205px;
   left: 335px;
