@@ -24,8 +24,9 @@ export default defineNuxtConfig({
     remoteCountIntervalSeconds: 60,
     remoteCountTokenFile: '',
     public: {
-      signatureCountdownSeconds: 10,
-      signatureIdleTimeoutSeconds: 5
+      signatureIdleTimeoutSeconds: 5,
+      signatureFinishPauseSeconds: 2,
+      signatureMaxSeconds: 30
     }
   }
 })

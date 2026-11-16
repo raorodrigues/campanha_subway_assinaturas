@@ -3,8 +3,9 @@ type KioskScreen = 'welcome' | 'signing' | 'thanks'
 type Timer = ReturnType<typeof setTimeout>
 
 const runtimeConfig = useRuntimeConfig()
-const signatureCountdownSeconds = Number(runtimeConfig.public.signatureCountdownSeconds)
 const signatureIdleTimeoutSeconds = Number(runtimeConfig.public.signatureIdleTimeoutSeconds)
+const signatureFinishPauseSeconds = Number(runtimeConfig.public.signatureFinishPauseSeconds)
+const signatureMaxSeconds = Number(runtimeConfig.public.signatureMaxSeconds)
 
 const SIGN_BUTTON_PRESS_DURATION = 180
 const THANK_YOU_DURATION = 5000
@@ -42,12 +43,12 @@ const THANK_YOU_LINES = [
   'COM SUCESSO.',
 ]
 
-if (!Number.isSafeInteger(signatureCountdownSeconds) || signatureCountdownSeconds < 1) {
-  throw new Error('NUXT_PUBLIC_SIGNATURE_COUNTDOWN_SECONDS must be a positive integer.')
-}
-
-if (!Number.isSafeInteger(signatureIdleTimeoutSeconds) || signatureIdleTimeoutSeconds < 1) {
-  throw new Error('NUXT_PUBLIC_SIGNATURE_IDLE_TIMEOUT_SECONDS must be a positive integer.')
+for (const [name, value] of [
+  ['NUXT_PUBLIC_SIGNATURE_IDLE_TIMEOUT_SECONDS', signatureIdleTimeoutSeconds],
+  ['NUXT_PUBLIC_SIGNATURE_FINISH_PAUSE_SECONDS', signatureFinishPauseSeconds],
+  ['NUXT_PUBLIC_SIGNATURE_MAX_SECONDS', signatureMaxSeconds],
+] as const) {
+  if (!Number.isSafeInteger(value) || value < 1) throw new Error(`${name} must be a positive integer.`)
 }
 
 // The totem is touch-only, but Windows still draws the pointer where the finger
@@ -328,8 +329,9 @@ onBeforeUnmount(() => {
           :active="isSigningActive"
           :submitting="isSubmitting"
           :error="submissionError"
-          :duration-seconds="signatureCountdownSeconds"
           :idle-timeout-seconds="signatureIdleTimeoutSeconds"
+          :finish-pause-seconds="signatureFinishPauseSeconds"
+          :max-seconds="signatureMaxSeconds"
           @close="handleSignatureClose"
           @complete="handleSignatureComplete"
         />

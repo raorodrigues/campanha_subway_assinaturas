@@ -8,12 +8,16 @@ interface SignaturePoint {
 type SignatureStroke = SignaturePoint[]
 
 const props = defineProps<{
-  /** True once the enter animation has settled; countdowns and input start only then. */
+  /** True once the enter animation has settled; timers and input start only then. */
   active: boolean
   submitting: boolean
   error: string
-  durationSeconds: number
+  /** Time to start signing; nobody touching in time sends the kiosk home. */
   idleTimeoutSeconds: number
+  /** A lifted finger for this long ends the signature; a quicker touch continues it. */
+  finishPauseSeconds: number
+  /** Hidden cap from the first touch, so endless scribbling cannot hold the kiosk. */
+  maxSeconds: number
 }>()
 
 const emit = defineEmits<{
@@ -25,12 +29,13 @@ const canvasRef = ref<HTMLCanvasElement | null>(null)
 const rootRef = ref<HTMLElement | null>(null)
 const hasSignature = ref(false)
 const isDrawing = ref(false)
-const remainingSeconds = ref(props.durationSeconds)
 const idleRemainingSeconds = ref(props.idleTimeoutSeconds)
 const hasStartedSigning = ref(false)
 const expired = ref(false)
-let deadline = 0
 let idleDeadline = 0
+let maxDeadline = 0
+// Set while the finger is lifted; cleared by the next touch.
+let finishDeadline: number | null = null
 let timerId: ReturnType<typeof setInterval> | null = null
 let completionRequested = false
 
@@ -192,7 +197,9 @@ function startDrawing(event: PointerEvent) {
   if (!canvas) return
 
   activePointerId = event.pointerId
+  if (!hasStartedSigning.value) maxDeadline = Date.now() + props.maxSeconds * 1000
   hasStartedSigning.value = true
+  finishDeadline = null
   isDrawing.value = true
   hasSignature.value = true
   strokes.push([getPoint(event)])
@@ -223,6 +230,7 @@ function stopDrawing(event: PointerEvent) {
   if (event.pointerId !== activePointerId) return
   isDrawing.value = false
   activePointerId = null
+  finishDeadline = Date.now() + props.finishPauseSeconds * 1000
   requestDraw()
 }
 
@@ -264,22 +272,18 @@ function stopTimer() {
   timerId = null
 }
 
-function updateCountdown() {
-  remainingSeconds.value = Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
+function updateTimers() {
+  const now = Date.now()
   if (!hasStartedSigning.value) {
-    idleRemainingSeconds.value = Math.max(0, Math.ceil((idleDeadline - Date.now()) / 1000))
-    if (idleRemainingSeconds.value === 0) {
-      stopTimer()
-      close()
-      return
-    }
+    idleRemainingSeconds.value = Math.max(0, Math.ceil((idleDeadline - now) / 1000))
+    if (idleRemainingSeconds.value === 0) close()
+    return
   }
 
-  if (remainingSeconds.value === 0) {
+  const paused = finishDeadline !== null && now >= finishDeadline
+  if (paused || now >= maxDeadline) {
     expired.value = true
-    stopTimer()
-    if (hasSignature.value) complete()
-    else close()
+    complete()
   }
 }
 
@@ -291,12 +295,11 @@ function startSession() {
   completionRequested = false
   expired.value = false
   hasStartedSigning.value = false
-  remainingSeconds.value = props.durationSeconds
+  finishDeadline = null
   idleRemainingSeconds.value = props.idleTimeoutSeconds
-  deadline = Date.now() + props.durationSeconds * 1000
   idleDeadline = Date.now() + props.idleTimeoutSeconds * 1000
   stopTimer()
-  timerId = setInterval(updateCountdown, 100)
+  timerId = setInterval(updateTimers, 100)
   window.addEventListener('keydown', handleKeydown)
   rootRef.value?.focus({ preventScroll: true })
 }
@@ -355,8 +358,13 @@ onBeforeUnmount(() => {
         @pointercancel="stopDrawing"
         @lostpointercapture="stopDrawing"
       />
-      <span class="signing-screen__countdown" role="timer" aria-live="off">
-        {{ submitting ? 'Salvando…' : error ? 'Erro' : `${hasStartedSigning ? remainingSeconds : idleRemainingSeconds}s` }}
+      <!--
+        Counts down only the time to start. Once signing starts it is gone for
+        good (a pause ends the signature; saving and errors have their own UI),
+        so it never flashes back while the screen leaves.
+      -->
+      <span v-if="!hasStartedSigning" class="signing-screen__countdown" role="timer" aria-live="off">
+        {{ idleRemainingSeconds }}s
       </span>
       <div v-if="error" class="signing-screen__error">
         <p role="alert">{{ error }}</p>

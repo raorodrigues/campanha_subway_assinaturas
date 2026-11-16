@@ -101,12 +101,14 @@ ou expirado; `no connection` = sem internet, o painel mantém o último número)
 
 ## Sessões de assinatura e persistência
 
-Abrir a tela de assinatura inicia uma contagem regressiva configurada por
-`NUXT_PUBLIC_SIGNATURE_COUNTDOWN_SECONDS` (10 s por padrão) e um prazo de início
-configurado por `NUXT_PUBLIC_SIGNATURE_IDLE_TIMEOUT_SECONDS` (5 s por padrão). Se
-ninguém começar a assinar antes do prazo, o totem volta às boas-vindas. Ao fim
-da contagem, uma sessão com traço é enviada automaticamente; uma sessão vazia
-volta às boas-vindas sem aumentar a contagem. Depois de uma assinatura, o
+Abrir a tela de assinatura mostra uma contagem regressiva para começar,
+configurada por `NUXT_PUBLIC_SIGNATURE_IDLE_TIMEOUT_SECONDS` (5 s por padrão). Se
+ninguém tocar antes do fim, o totem volta às boas-vindas sem aumentar a contagem.
+Durante a assinatura não há contagem na tela: ela termina quando o dedo fica
+fora da tela por `NUXT_PUBLIC_SIGNATURE_FINISH_PAUSE_SECONDS` (2 s por padrão).
+Tirar o dedo e voltar antes disso continua a mesma assinatura. Um limite oculto,
+`NUXT_PUBLIC_SIGNATURE_MAX_SECONDS` (30 s por padrão, a partir do primeiro toque),
+salva a assinatura para que ninguém prenda o totem rabiscando sem parar. Depois de uma assinatura, o
 agradecimento volta às boas-vindas após 5 s. Erros ficam visíveis e permitem
 tentar de novo.
 
@@ -189,8 +191,9 @@ pm2 save
   configure o Agendador de Tarefas para `pm2 resurrect` com o mesmo usuário,
   `PM2_HOME` e Node 22.22.3 (caminhos absolutos).
 
-`SIGNATURE_DB_PATH`, `NUXT_SIGNATURE_COUNT_OFFSET`, `NUXT_PUBLIC_SIGNATURE_COUNTDOWN_SECONDS` e
-`NUXT_PUBLIC_SIGNATURE_IDLE_TIMEOUT_SECONDS` podem ser definidas no ambiente
-antes de `pm2:start`. Os tempos são inteiros positivos em segundos (padrões `10`
-e `5`). O PM2 não carrega o `.env` da aplicação. Configure rotação dos logs do
+`SIGNATURE_DB_PATH`, `NUXT_SIGNATURE_COUNT_OFFSET`,
+`NUXT_PUBLIC_SIGNATURE_IDLE_TIMEOUT_SECONDS`, `NUXT_PUBLIC_SIGNATURE_FINISH_PAUSE_SECONDS`
+e `NUXT_PUBLIC_SIGNATURE_MAX_SECONDS` podem ser definidas no ambiente antes de
+`pm2:start`. Os tempos são inteiros positivos em segundos (padrões `5`, `2` e
+`30`). O PM2 não carrega o `.env` da aplicação. Configure rotação dos logs do
 PM2 no computador de destino.
