@@ -18,8 +18,11 @@ const KIOSK_WIDTH = 1080
 const KIOSK_HEIGHT = 1920
 const KIOSK_IMAGES = [
   '/images/bg.webp',
-  '/images/lanche.webp',
-  '/images/foto-direita.webp',
+  '/images/parallax/sombra.webp',
+  '/images/parallax/sanduiche.webp',
+  '/images/parallax/frango.webp',
+  '/images/parallax/catupiry.webp',
+  '/images/parallax/selo.webp',
   '/images/box-assinatura.webp',
   '/images/maozinha.webp',
 ] as const
@@ -314,12 +317,27 @@ onBeforeUnmount(() => {
             </span>
           </button>
 
-          <!-- As in the first version: each photo enters and leaves on its own side. -->
+          <!--
+            Each half enters and leaves on its own side. Inside, the layers of
+            the layout PSD drift at different speeds, as in
+            layouts/referencia_parallax_fotos.mp4 (parallax, motion.css).
+          -->
           <div class="welcome-screen__food" aria-hidden="true">
             <div class="welcome-screen__food-left m m-left">
-              <img src="/images/lanche.webp" alt="" draggable="false">
+              <div class="food-sandwich">
+                <img class="food-sandwich__shadow" src="/images/parallax/sombra.webp" alt="" draggable="false">
+                <img class="food-sandwich__photo" src="/images/parallax/sanduiche.webp" alt="" draggable="false">
+              </div>
             </div>
-            <img class="welcome-screen__food-right m m-right" src="/images/foto-direita.webp" alt="" draggable="false">
+            <div class="welcome-screen__food-right m m-right">
+              <div class="food-texture food-texture--catupiry">
+                <img src="/images/parallax/catupiry.webp" alt="" draggable="false">
+              </div>
+              <div class="food-texture food-texture--frango">
+                <img src="/images/parallax/frango.webp" alt="" draggable="false">
+              </div>
+              <img class="food-seal m m-pop" src="/images/parallax/selo.webp" alt="" draggable="false">
+            </div>
           </div>
         </section>
 
@@ -516,10 +534,10 @@ html.page-signature {
 
 /*
  * The photos must read as one solid block: no background may show between
- * them. The pieces overlap instead of just touching, because a scaled-down
- * preview puts their edges on half pixels, and foto-direita.webp has a nearly
- * transparent first column. The left panel runs 2px under the right photo, and
- * the block runs 2px down under the footer's white band (it is drawn above it).
+ * them. The halves overlap instead of just touching, because a scaled-down
+ * preview puts their edges on half pixels: the left panel runs 2px under the
+ * right one, and the block runs 2px down under the footer's white band (it is
+ * drawn above it).
  */
 .welcome-screen__food {
   --food-overlap: 2px;
@@ -539,16 +557,7 @@ html.page-signature {
   flex: 0 0 auto;
   margin-right: calc(-1 * var(--food-overlap));
   overflow: hidden;
-  background: #f4dc18;
-}
-
-.welcome-screen__food-left img {
-  position: absolute;
-  top: -68px;
-  left: 0;
-  width: 1080px;
-  height: 597px;
-  max-width: none;
+  background: var(--kiosk-yellow);
 }
 
 .welcome-screen__food-right {
@@ -556,7 +565,82 @@ html.page-signature {
   width: 540px;
   height: 100%;
   flex: 0 0 540px;
-  object-fit: cover;
+  overflow: hidden;
+}
+
+/*
+ * Layers exported from layouts/MUB_interativo_assinatura.psd at their layout
+ * positions (block top = 1175px, right half from x = 540px). At rest the
+ * block matches the layout; the drift is in motion.css.
+ */
+.welcome-screen__food img {
+  position: absolute;
+  max-width: none;
+}
+
+/* The sandwich and its shadow move as one. */
+.food-sandwich {
+  position: absolute;
+  inset: 0;
+}
+
+/* PSD "SOMBRA" (multiply on the yellow). */
+.food-sandwich__shadow {
+  top: 293px;
+  left: -561px;
+  width: 1268px;
+  height: 141px;
+  mix-blend-mode: multiply;
+}
+
+/* PSD "SANDUICHE": only its right end shows; the file holds the whole sandwich at 2x. */
+.food-sandwich__photo {
+  top: 58.5px;
+  left: -400px;
+  width: 928px;
+  height: 341.5px;
+}
+
+/* Chicken on top (PSD 1174–1421px), Catupiry® below (1416–1637px). */
+.food-texture {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.food-texture--frango {
+  top: 0;
+  height: 246px;
+}
+
+/* Whole PSD layer (1114–1433px): 60px spare above the band for the drift down. */
+.food-texture--frango img {
+  top: -61px;
+  left: -71px;
+  width: 611px;
+  height: 319px;
+}
+
+.food-texture--catupiry {
+  top: 241px;
+  bottom: 0;
+}
+
+/* PSD layer rows 1100–1650px: 316px spare above the band for the drift up. */
+.food-texture--catupiry img {
+  top: -316px;
+  left: -70px;
+  width: 610px;
+  height: 550px;
+}
+
+/* PSD "AF_CATUPIRY_SELO": stays still in front of the moving photos. */
+.food-seal {
+  top: 205px;
+  left: 335px;
+  width: 143px;
+  height: 256px;
 }
 
 /* Seven lines (896px), centred in the green area above the footer (0–1636px). */
