@@ -68,12 +68,12 @@ for project in "${PROJECTS[@]}"; do
   cp -R "$REPO_DIR/$project/.output" "$OUT_DIR/$project/.output"
 done
 
-cp "$KIT_DIR/kiosk.json" "$KIT_DIR/boot.html" "$KIT_DIR/README.md" "$OUT_DIR/"
+cp "$KIT_DIR/kiosk.json" "$KIT_DIR/boot.html" "$KIT_DIR/README.md" "$KIT_DIR/run-manual.mjs" "$OUT_DIR/"
 # Windows PowerShell 5.1 reads BOM-less scripts as ANSI; batch files want CRLF.
 for script in start-kiosk.ps1 install-kiosk.ps1; do
   { printf '\xEF\xBB\xBF'; sed 's/$/\r/' "$KIT_DIR/$script"; } > "$OUT_DIR/$script"
 done
-for script in start-kiosk.cmd stop-kiosk.cmd; do
+for script in start-kiosk.cmd stop-kiosk.cmd run-manual.cmd; do
   sed 's/$/\r/' "$KIT_DIR/$script" > "$OUT_DIR/$script"
 done
 

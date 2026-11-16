@@ -72,6 +72,11 @@ Faça com a conta do totem logada. Marque cada item.
   `C:\kiosk\stop-kiosk.cmd`. Para voltar: `C:\kiosk\start-kiosk.cmd` ou reinicie.
 - **Logs:** `C:\kiosk\logs\kiosk.log` (inícios, reinícios, telas detectadas),
   `assinatura.log` (servidor único da assinatura e do contador).
+- **Modo manual (diagnóstico, sem PowerShell nem PM2):** pare o quiosque (`stop-kiosk.cmd`) e
+  dê dois cliques em `C:\kiosk\run-manual.cmd`. Ele usa o mesmo `kiosk.json`, banco e token,
+  mostra o log na janela (e grava em `logs\assinatura.log`) e abre as duas páginas num
+  navegador normal. Não reinicia nada sozinho: fechar a janela para o servidor. Para não abrir
+  o navegador: `run-manual.cmd --sem-navegador`.
 - **Backup da contagem:** pare o quiosque e copie `C:\kiosk\data\` inteira.
 - **Atualizar:** pare o quiosque, faça backup de `data\`, substitua tudo em `C:\kiosk`
   **exceto `data\`** pelo pacote novo e reinicie.
