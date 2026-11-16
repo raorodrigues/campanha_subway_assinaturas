@@ -157,7 +157,7 @@ function releaseSignButton() {
   if (signButtonTimeout === null) isSignButtonPressed.value = false
 }
 
-// The whole welcome screen acts as the "Assine aqui" button: a tap anywhere
+// The whole welcome screen acts as the "Clique e assine" button: a tap anywhere
 // shows the pressed artwork and opens the signature screen. The button itself
 // stays focusable, and its keyboard click bubbles up to the same handler.
 function activateSignButton() {
@@ -307,7 +307,10 @@ onBeforeUnmount(() => {
             :class="{ 'is-pressed': isSignButtonPressed }"
             type="button"
           >
-            <span class="welcome-screen__button-face">Assine aqui</span>
+            <span class="welcome-screen__button-face">
+              Clique e assine
+              <span class="welcome-screen__button-hand" aria-hidden="true" />
+            </span>
           </button>
 
           <!-- As in the first version: each photo enters and leaves on its own side. -->
@@ -441,7 +444,7 @@ html.page-signature {
 }
 
 /*
- * "Assine aqui": a yellow face on a darker yellow slab (the 3D depth of the
+ * "Clique e assine": a yellow face on a darker yellow slab (the 3D depth of the
  * layout). The depth is drawn with stacked shadows so it reads as one solid
  * extrusion; pressing slides the face down into it.
  */
@@ -485,6 +488,17 @@ html.page-signature {
   font-weight: 900;
   line-height: 1;
   text-transform: uppercase;
+}
+
+/* The hand artwork is yellow; used as a mask it takes the text colour. */
+.welcome-screen__button-hand {
+  flex: none;
+  width: 117px;
+  height: 99px;
+  margin-left: 28px;
+  background-color: currentColor;
+  -webkit-mask: url('/images/maozinha.webp') center / contain no-repeat;
+  mask: url('/images/maozinha.webp') center / contain no-repeat;
 }
 
 .welcome-screen__button.is-pressed .welcome-screen__button-face {
