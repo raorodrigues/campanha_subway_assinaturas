@@ -50,8 +50,12 @@ if (!Number.isSafeInteger(signatureIdleTimeoutSeconds) || signatureIdleTimeoutSe
   throw new Error('NUXT_PUBLIC_SIGNATURE_IDLE_TIMEOUT_SECONDS must be a positive integer.')
 }
 
+// The totem is touch-only, but Windows still draws the pointer where the finger
+// is (or the whole time, on touch frames that report as a mouse). Hidden here;
+// add ?cursor to the URL to see it while testing with a mouse.
+const route = useRoute()
 useHead({
-  htmlAttrs: { class: 'page-signature' },
+  htmlAttrs: { class: computed(() => ('cursor' in route.query ? 'page-signature show-cursor' : 'page-signature')) },
   meta: [
     { name: 'viewport', content: `width=${KIOSK_WIDTH}, initial-scale=1, maximum-scale=1, user-scalable=no` },
   ],
@@ -337,6 +341,12 @@ onBeforeUnmount(() => {
 
 <style>
 /* Shared kiosk resets live in app.vue; this screen only sets its own colours. */
+/* !important beats the per-component cursor rules (signature pad, buttons). */
+html.page-signature:not(.show-cursor),
+html.page-signature:not(.show-cursor) * {
+  cursor: none !important;
+}
+
 html.page-signature {
   color-scheme: light;
   background: #00843d;
