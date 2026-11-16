@@ -34,6 +34,7 @@ const KIOSK_IMAGES = [
   '/images/parallax/selo.webp',
   '/images/box-assinatura.webp',
   '/images/maozinha.webp',
+  '/images/maozinha-branca.webp',
 ] as const
 
 // Live text in the official font. *Asterisks* mark the highlighted words
@@ -340,7 +341,8 @@ onBeforeUnmount(() => {
           >
             <span class="welcome-screen__button-face">
               Clique e assine
-              <span class="welcome-screen__button-hand" aria-hidden="true" />
+              <span class="welcome-screen__button-tap" aria-hidden="true" />
+              <img class="welcome-screen__button-hand" src="/images/maozinha-branca.webp" alt="" draggable="false">
             </span>
           </button>
 
@@ -544,21 +546,45 @@ html.page-signature {
   background: var(--button-face);
   box-shadow: var(--depth-shadow);
   color: var(--button-text);
-  font-size: 104px;
-  font-weight: 900;
+  /* Nudges the centred text 3px right and down onto the PSD text box (194,905). */
+  box-sizing: border-box;
+  padding: 6px 0 0 6px;
+  /* v3 PSD: SubwaySansCond-Bold, 149.79pt x 0.707 = 106px (the headline stays Black). */
+  font-size: 106px;
+  font-weight: 700;
   line-height: 1;
   text-transform: uppercase;
 }
 
-/* The hand artwork is yellow; used as a mask it takes the text colour. */
+/*
+ * layouts/mub_assinatura_v3.psd: white hand pointing at the button's lower
+ * right corner, over its edge (PSD 821,994). Part of the face, so it sinks
+ * with it when pressed.
+ */
 .welcome-screen__button-hand {
-  flex: none;
-  width: 117px;
-  height: 99px;
-  margin-left: 28px;
-  background-color: currentColor;
-  -webkit-mask: url('/images/maozinha.webp') center / contain no-repeat;
-  mask: url('/images/maozinha.webp') center / contain no-repeat;
+  position: absolute;
+  top: 128px;
+  left: 747px;
+  width: 143px;
+  height: 124px;
+  max-width: none;
+  pointer-events: none;
+  /* The fingertip, so the press squash keeps the tip on the button corner. */
+  transform-origin: 16px 16px;
+}
+
+/* Ring that spreads from the fingertip when the hand presses (motion.css). */
+.welcome-screen__button-tap {
+  position: absolute;
+  top: 144px;
+  left: 763px;
+  width: 72px;
+  height: 72px;
+  margin: -36px 0 0 -36px;
+  border: 5px solid var(--kiosk-white);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .welcome-screen__button.is-pressed .welcome-screen__button-face {
