@@ -512,21 +512,30 @@ html.page-signature {
   border-radius: 22px;
 }
 
+/*
+ * The photos must read as one solid block: no background may show between
+ * them. The pieces overlap instead of just touching, because a scaled-down
+ * preview puts their edges on half pixels, and foto-direita.webp has a nearly
+ * transparent first column. The left panel runs 2px under the right photo, and
+ * the block runs 2px down under the footer's white band (it is drawn above it).
+ */
 .welcome-screen__food {
+  --food-overlap: 2px;
   position: absolute;
   top: 1175px;
   left: 0;
   display: flex;
   width: 1080px;
-  height: 461px;
+  height: calc(461px + var(--food-overlap));
   overflow: hidden;
 }
 
 .welcome-screen__food-left {
   position: relative;
-  width: 540px;
-  height: 461px;
-  flex: 0 0 540px;
+  width: calc(540px + var(--food-overlap));
+  height: 100%;
+  flex: 0 0 auto;
+  margin-right: calc(-1 * var(--food-overlap));
   overflow: hidden;
   background: #f4dc18;
 }
@@ -541,9 +550,11 @@ html.page-signature {
 }
 
 .welcome-screen__food-right {
+  position: relative;
   width: 540px;
-  height: 461px;
+  height: 100%;
   flex: 0 0 540px;
+  object-fit: cover;
 }
 
 /* Seven lines (896px), centred in the green area above the footer (0–1636px). */
