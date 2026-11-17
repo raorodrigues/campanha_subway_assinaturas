@@ -13,8 +13,8 @@
  * - Vue only watches the screen root, so the root runs an invisible "hold"
  *   animation of --in-total / --out-total. Keep those equal to the slowest
  *   child on that screen.
- * - Pacing: entrances nobody waits for (back to welcome, thanks) follow the
- *   reference; everything after a tap fits in ~800 ms (300 out + 500 in).
+ * - Pacing: the welcome (home) enters and leaves slowly and smoothly
+ *   (~2 s in, 550 ms out); the screens after it stay brisk (500 ms in).
  */
 
 :root {
@@ -32,20 +32,21 @@
 /* ------------------------------ Timeline map ------------------------------ */
 
 .welcome-screen {
-  --m-words-at: 150ms;
-  --m-word-stagger: 110ms;
-  --m-word-in: 450ms; /* 7 words: last one settles at ~1.26s */
-  --m-word-out: 200ms;
-  --in-total: 1300ms;
-  --out-total: 300ms;
+  --m-words-at: 250ms;
+  --m-word-stagger: 160ms;
+  --m-word-in: 750ms; /* 7 words: last one settles at ~1.96s */
+  --m-word-out: 420ms;
+  --out-ease: var(--m-ease-in-out); /* the home leaves gently, no sudden acceleration */
+  --in-total: 2000ms;
+  --out-total: 550ms;
 }
-/* First-version timing: each photo slides 64px from its own side with a fade. */
+/* Unhurried: each photo slides 64px from its own side with a fade. */
 .welcome-screen__food-left,
-.welcome-screen__food-right { --in-at: 100ms; --in-dur: 300ms; --out-dur: 160ms; }
+.welcome-screen__food-right { --in-at: 100ms; --in-dur: 800ms; --out-dur: 550ms; }
 /* The Catupiry® seal pops in once its photo has arrived (as in the reference). */
-.food-seal { --in-at: 380ms; --in-dur: 420ms; --out-dur: 160ms; --m-pop-scale: 0.6; }
+.food-seal { --in-at: 750ms; --in-dur: 650ms; --out-dur: 420ms; --m-pop-scale: 0.6; }
 /* Pops in while the headline is still appearing; tappable from that moment. */
-.welcome-screen__button { --in-at: 700ms; --in-dur: 380ms; --out-dur: 180ms; }
+.welcome-screen__button { --in-at: 1100ms; --in-dur: 650ms; --out-dur: 420ms; }
 
 .signing-screen {
   --in-total: 500ms;
@@ -101,7 +102,7 @@
   .screen-leave-active .m {
     animation-delay: var(--out-at, 0ms);
     animation-duration: var(--out-dur);
-    animation-timing-function: var(--m-ease-in);
+    animation-timing-function: var(--out-ease, var(--m-ease-in));
     animation-fill-mode: both;
   }
 

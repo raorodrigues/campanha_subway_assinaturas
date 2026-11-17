@@ -20,7 +20,8 @@ const KIOSK_HEIGHT = 1920
 // happens in an inert <template>, where Chrome rejects a <video> for good
 // ("Media load rejected by URL safety check"). See reloadFoodVideos().
 //
-// Played as the agency delivered them: 6 s each, looped, all from frame 0.
+// Played as the agency delivered them: 6 s each, all from frame 0. Chicken and
+// Catupiry loop; the sandwich plays once and rests on its last frame.
 const FOOD_VIDEOS = {
   lanche: { src: '/videos/lanche.webm', poster: '/videos/lanche-poster.webp' },
   frango: { src: '/videos/frango.webm', poster: '/videos/frango-poster.webp' },
@@ -349,7 +350,7 @@ onBeforeUnmount(() => {
             Each half enters and leaves on its own side. Inside, the agency's
             videos (fatiado/lanche|frango|catupiry.webm, rendered at their layout
             position on a 1080x1920 frame), cropped to each block and otherwise
-            unchanged: 6 s, looped. The poster (first frame) shows until the
+            unchanged: 6 s (the sandwich plays once, the others loop). The poster (first frame) shows until the
             video starts.
           -->
           <div ref="foodRef" class="welcome-screen__food" aria-hidden="true">
@@ -358,7 +359,7 @@ onBeforeUnmount(() => {
                 class="food-video food-video--lanche"
                 :src="FOOD_VIDEOS.lanche.src"
                 :poster="FOOD_VIDEOS.lanche.poster"
-                autoplay muted loop playsinline preload="auto"
+                autoplay muted playsinline preload="auto"
                 disablepictureinpicture disableremoteplayback tabindex="-1"
               />
             </div>
