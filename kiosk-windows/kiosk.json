@@ -5,7 +5,7 @@
   "signatureFinishPauseSeconds": 3,
   "signatureMaxSeconds": 30,
   "signatureCountOffset": 0,
-  "remoteCountUrl": "https://lpsubwayfrango.umstudiocode.com.br/api/v1/signatures/count",
+  "remoteCountUrl": "https://www.peticaosubway.com.br/api/v1/signatures/count",
   "remoteCountIntervalSeconds": 60,
   "remoteCountTokenFile": "token.txt",
   "browser": "auto",
