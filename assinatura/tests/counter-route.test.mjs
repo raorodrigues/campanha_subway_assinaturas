@@ -49,6 +49,10 @@ test('one server serves the kiosk, the LED counter page and the shared count', {
         await asset.arrayBuffer()
       }
     }
+    // The sandwich plays once and rests on its last frame; the others loop.
+    const videoTag = (name) => kioskHtml.match(new RegExp(`<video[^>]*src="/videos/${name}\\.webm"[^>]*>`))?.[0] ?? ''
+    assert.doesNotMatch(videoTag('lanche'), /\sloop[\s=>]/, 'lanche')
+    for (const name of ['frango', 'catupiry']) assert.match(videoTag(name), /\sloop[\s=>]/, name)
 
     // UI sounds (button tap, signature saved), served locally like the videos.
     for (const name of ['button', 'success']) {
