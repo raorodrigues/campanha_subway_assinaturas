@@ -636,9 +636,15 @@ html.page-signature {
   object-fit: fill;
 }
 
+/*
+ * Runs 4px past the panel's bottom (clipped there): on the Windows totem the
+ * stretched video showed a thin green line along its bottom edge (the
+ * decoder's padding rows; 456 is not a multiple of 16). Those bottom rows are
+ * plain yellow, so cutting them changes nothing else.
+ */
 .food-video--lanche {
   top: 0;
-  height: 100%;
+  height: calc(100% + 4px);
 }
 
 .food-video--frango {
