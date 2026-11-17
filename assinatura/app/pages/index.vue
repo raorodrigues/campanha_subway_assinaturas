@@ -610,12 +610,16 @@ html.page-signature {
   background: var(--kiosk-yellow);
 }
 
+/* Cream like the Catupiry's bottom rows: when scaled, a video's edge rounds
+   differently from a panel's, so the panel's background (not the video)
+   draws the bottom edge, level with the yellow one on the left. */
 .welcome-screen__food-right {
   position: relative;
   width: 540px;
   height: 100%;
   flex: 0 0 540px;
   overflow: hidden;
+  background: #eadcc8;
 }
 
 /*
@@ -636,9 +640,15 @@ html.page-signature {
   object-fit: fill;
 }
 
+/*
+ * Runs 4px past the panel's bottom (clipped there): on the Windows totem the
+ * stretched video showed a thin green line along its bottom edge (the
+ * decoder's padding rows; 456 is not a multiple of 16). Those bottom rows are
+ * plain yellow, so cutting them changes nothing else.
+ */
 .food-video--lanche {
   top: 0;
-  height: 100%;
+  height: calc(100% + 4px);
 }
 
 .food-video--frango {
@@ -646,9 +656,11 @@ html.page-signature {
   height: 244px;
 }
 
+/* An explicit height: on a <video>, top + bottom alone keep the video's own
+   aspect ratio, which ended it 1.2px above the sandwich panel (a visible step). */
 .food-video--catupiry {
   top: 243px;
-  bottom: 0;
+  height: calc(100% - 243px);
 }
 
 /* PSD "AF_CATUPIRY_SELO": stays still in front of the videos. */
