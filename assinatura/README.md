@@ -7,7 +7,7 @@ Aplicação Nuxt da campanha Subway com duas telas servidas pelo mesmo servidor:
 | `/` | Totem de assinatura (touch, vertical) | 1080×1920 |
 | `/counter` | Contador para o painel LED | 384×192 |
 
-## Totem (`/`)
+## Totem MUB+ (`/`)
 
 A interface é desenhada em 1080×1920 px CSS e roda em escala 1 no totem.
 Janelas menores mostram a tela inteira reduzida, útil para pré-visualizar no
