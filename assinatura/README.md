@@ -120,11 +120,12 @@ ou expirado; `no connection` = sem internet, o painel mantém o último número)
 Abrir a tela de assinatura mostra uma contagem regressiva para começar,
 configurada por `NUXT_PUBLIC_SIGNATURE_IDLE_TIMEOUT_SECONDS` (5 s por padrão). Se
 ninguém tocar antes do fim, o totem volta às boas-vindas sem aumentar a contagem.
-Durante a assinatura não há contagem na tela: ela termina quando o dedo fica
-fora da tela por `NUXT_PUBLIC_SIGNATURE_FINISH_PAUSE_SECONDS` (2 s por padrão).
-Tirar o dedo e voltar antes disso continua a mesma assinatura. Um limite oculto,
+A assinatura termina quando o dedo fica fora da tela por
+`NUXT_PUBLIC_SIGNATURE_FINISH_PAUSE_SECONDS` (2 s por padrão). Tirar o dedo e
+voltar antes disso continua a mesma assinatura. Um limite,
 `NUXT_PUBLIC_SIGNATURE_MAX_SECONDS` (30 s por padrão, a partir do primeiro toque),
-salva a assinatura para que ninguém prenda o totem rabiscando sem parar. Depois de uma assinatura, o
+salva a assinatura para que ninguém prenda o totem rabiscando sem parar; a partir
+do primeiro toque, a contagem na tela mostra o tempo que falta até esse limite. Depois de uma assinatura, o
 agradecimento volta às boas-vindas após 5 s. Erros ficam visíveis e permitem
 tentar de novo.
 

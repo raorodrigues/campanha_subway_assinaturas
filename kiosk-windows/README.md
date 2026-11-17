@@ -93,7 +93,7 @@ Faça com a conta do totem logada. Marque cada item.
 | `signaturePort` | `3000` | Porta do servidor. O contador abre em `/counter` nesta mesma porta; `counterPort` de versões anteriores é ignorado. |
 | `signatureIdleTimeoutSeconds` | `5` | Tempo para começar a assinar (contagem visível). Sem toque, volta ao início. |
 | `signatureFinishPauseSeconds` | `2` | Segundos com o dedo fora da tela que encerram a assinatura. Tirar e voltar o dedo antes disso continua a mesma assinatura. |
-| `signatureMaxSeconds` | `30` | Limite oculto a partir do primeiro toque: ao atingi-lo, a assinatura é salva. Evita que alguém prenda o totem rabiscando sem parar. |
+| `signatureMaxSeconds` | `30` | Limite a partir do primeiro toque, mostrado na contagem da tela: ao atingi-lo, a assinatura é salva. Evita que alguém prenda o totem rabiscando sem parar. |
 | `signatureCountOffset` | `0` | Somado ao número do contador (ex.: assinaturas coletadas fora do totem). Não altera o banco. Inteiro ≥ 0; valor inválido impede o servidor de subir (veja `logs\assinatura.log`). |
 | `remoteCountUrl` | API de homologação | Endereço da API online de contagem. O número que ela devolve é somado ao contador a cada consulta. Vazio (`""`) desliga a função e o totem funciona 100% offline. |
 | `remoteCountIntervalSeconds` | `60` | Intervalo entre consultas à API. Inteiro de 1 a 86400. Se a API responder 429 (limite de requisições), o intervalo dobra até 10 min. |
