@@ -42,7 +42,7 @@ let finishDeadline: number | null = null
 let timerId: ReturnType<typeof setInterval> | null = null
 let completionRequested = false
 
-const TRAIL_DURATION = 900
+const TRAIL_DURATION = 1500
 const strokes: SignatureStroke[] = []
 let context: CanvasRenderingContext2D | null = null
 let frameId: number | null = null
