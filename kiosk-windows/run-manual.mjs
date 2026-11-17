@@ -48,7 +48,7 @@ function buildEnv(config) {
     PORT: String(config.signaturePort),
     SIGNATURE_DB_PATH: join(DATA_DIR, 'signatures.sqlite'),
     NUXT_PUBLIC_SIGNATURE_IDLE_TIMEOUT_SECONDS: pick('signatureIdleTimeoutSeconds', 5),
-    NUXT_PUBLIC_SIGNATURE_FINISH_PAUSE_SECONDS: pick('signatureFinishPauseSeconds', 2),
+    NUXT_PUBLIC_SIGNATURE_FINISH_PAUSE_SECONDS: pick('signatureFinishPauseSeconds', 3),
     NUXT_PUBLIC_SIGNATURE_MAX_SECONDS: pick('signatureMaxSeconds', 30),
     NUXT_SIGNATURE_COUNT_OFFSET: pick('signatureCountOffset', 0),
     NUXT_REMOTE_COUNT_URL: pick('remoteCountUrl', ''),

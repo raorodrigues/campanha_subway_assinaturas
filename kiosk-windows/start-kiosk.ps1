@@ -86,7 +86,7 @@ try {
   # JWT stays in a file next to kiosk.json and is never written to the logs.
   # Optional, so a kiosk.json from an older package still starts (its
   # signatureCountdownSeconds is ignored: a pause now ends the signature).
-  $finishPause = '2'
+  $finishPause = '3'
   if ($config.PSObject.Properties.Name -contains 'signatureFinishPauseSeconds') {
     $finishPause = [string] $config.signatureFinishPauseSeconds
   }
