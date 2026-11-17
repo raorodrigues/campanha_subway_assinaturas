@@ -16,7 +16,7 @@ const props = defineProps<{
   idleTimeoutSeconds: number
   /** A lifted finger for this long ends the signature; a quicker touch continues it. */
   finishPauseSeconds: number
-  /** Hidden cap from the first touch, so endless scribbling cannot hold the kiosk. */
+  /** Cap from the first touch, shown in the countdown, so endless scribbling cannot hold the kiosk. */
   maxSeconds: number
 }>()
 
@@ -29,9 +29,12 @@ const canvasRef = ref<HTMLCanvasElement | null>(null)
 const rootRef = ref<HTMLElement | null>(null)
 const hasSignature = ref(false)
 const isDrawing = ref(false)
-const idleRemainingSeconds = ref(props.idleTimeoutSeconds)
+// What the countdown shows: time to start, then (from the first touch) time left to sign.
+const remainingSeconds = ref(props.idleTimeoutSeconds)
 const hasStartedSigning = ref(false)
 const expired = ref(false)
+// Set once the signature is handed over, so the countdown never shows while the screen leaves.
+const isFinished = ref(false)
 let idleDeadline = 0
 let maxDeadline = 0
 // Set while the finger is lifted; cleared by the next touch.
@@ -197,7 +200,10 @@ function startDrawing(event: PointerEvent) {
   if (!canvas) return
 
   activePointerId = event.pointerId
-  if (!hasStartedSigning.value) maxDeadline = Date.now() + props.maxSeconds * 1000
+  if (!hasStartedSigning.value) {
+    maxDeadline = Date.now() + props.maxSeconds * 1000
+    remainingSeconds.value = props.maxSeconds
+  }
   hasStartedSigning.value = true
   finishDeadline = null
   isDrawing.value = true
@@ -259,6 +265,7 @@ function complete() {
   if (!hasSignature.value || props.submitting || (completionRequested && !props.error)) return
   stopTimer()
   completionRequested = true
+  isFinished.value = true
   isDrawing.value = false
   activePointerId = null
   // The drawing never leaves this component. Only a completion signal is sent.
@@ -275,10 +282,12 @@ function stopTimer() {
 function updateTimers() {
   const now = Date.now()
   if (!hasStartedSigning.value) {
-    idleRemainingSeconds.value = Math.max(0, Math.ceil((idleDeadline - now) / 1000))
-    if (idleRemainingSeconds.value === 0) close()
+    remainingSeconds.value = Math.max(0, Math.ceil((idleDeadline - now) / 1000))
+    if (remainingSeconds.value === 0) close()
     return
   }
+
+  remainingSeconds.value = Math.max(0, Math.ceil((maxDeadline - now) / 1000))
 
   const paused = finishDeadline !== null && now >= finishDeadline
   if (paused || now >= maxDeadline) {
@@ -294,9 +303,10 @@ function handleKeydown(event: KeyboardEvent) {
 function startSession() {
   completionRequested = false
   expired.value = false
+  isFinished.value = false
   hasStartedSigning.value = false
   finishDeadline = null
-  idleRemainingSeconds.value = props.idleTimeoutSeconds
+  remainingSeconds.value = props.idleTimeoutSeconds
   idleDeadline = Date.now() + props.idleTimeoutSeconds * 1000
   stopTimer()
   timerId = setInterval(updateTimers, 100)
@@ -359,12 +369,13 @@ onBeforeUnmount(() => {
         @lostpointercapture="stopDrawing"
       />
       <!--
-        Counts down only the time to start. Once signing starts it is gone for
-        good (a pause ends the signature; saving and errors have their own UI),
-        so it never flashes back while the screen leaves.
+        Counts down the time to start; from the first touch, the time left to
+        sign (maxSeconds). Gone for good once the signature is handed over
+        (saving and errors have their own UI), so it never flashes back while
+        the screen leaves.
       -->
-      <span v-if="!hasStartedSigning" class="signing-screen__countdown" role="timer" aria-live="off">
-        {{ idleRemainingSeconds }}s
+      <span v-if="!isFinished" class="signing-screen__countdown" role="timer" aria-live="off">
+        {{ remainingSeconds }}s
       </span>
       <div v-if="error" class="signing-screen__error">
         <p role="alert">{{ error }}</p>
