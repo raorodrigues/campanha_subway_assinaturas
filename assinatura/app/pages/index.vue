@@ -43,6 +43,7 @@ const KIOSK_IMAGES = [
 const WELCOME_LINES = [
   'ELEJA *FRANGO*',
   '*COM CATUPIRY®*',
+  '*ORIGINAL*',
   'PATRIMÔNIO',
   'AFETIVO',
   'BRASILEIRO',
@@ -53,6 +54,7 @@ const THANK_YOU_LINES = [
   'SEU AMOR',
   'POR *FRANGO*',
   '*COM CATUPIRY®*',
+  '*ORIGINAL*',
   'FOI REGISTRADO',
   'COM SUCESSO.',
 ]
@@ -488,7 +490,7 @@ html.page-signature {
 .thank-you-screen__message {
   position: absolute;
   color: var(--kiosk-white);
-  font-size: 156px;
+  font-size: 130px;
   font-weight: 900;
   line-height: 128px;
   letter-spacing: -0.025em;
@@ -497,7 +499,7 @@ html.page-signature {
 
 /* In a 128px line box the caps start ~1px below the top: matches the artwork at y=130. */
 .welcome-screen__headline {
-  top: 129px;
+  top: 60px;
   left: 78px;
 }
 
