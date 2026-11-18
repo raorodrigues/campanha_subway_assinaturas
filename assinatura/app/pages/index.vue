@@ -54,8 +54,8 @@ const THANK_YOU_LINES = [
   'SEU AMOR',
   'POR *FRANGO*',
   '*COM CATUPIRY®*',
-  '*ORIGINAL*',
-  'FOI REGISTRADO',
+  '*ORIGINAL* FOI',
+  'REGISTRADO',
   'COM SUCESSO.',
 ]
 
@@ -482,25 +482,25 @@ html.page-signature {
 }
 
 /*
- * Headline and thank-you text, measured on the artwork they replace: Subway
- * Sans Cond Black, 113px caps (156px type) on a 128px line pitch, slightly
- * tightened as in the layout.
+ * Headline and thank-you text, measured on the v4 artwork: Subway Sans Cond
+ * Black, ~103px caps (142px type), tracking -10 as in the layout. Each screen
+ * has its own line pitch (119px home, 124px thank-you).
  */
 .welcome-screen__headline,
 .thank-you-screen__message {
   position: absolute;
   color: var(--kiosk-white);
-  font-size: 130px;
+  font-size: 142px;
   font-weight: 900;
-  line-height: 128px;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.01em;
   text-transform: uppercase;
 }
 
-/* In a 128px line box the caps start ~1px below the top: matches the artwork at y=130. */
+/* v4 home: caps from y=128 to 825, six lines on a 119px pitch. */
 .welcome-screen__headline {
-  top: 60px;
-  left: 78px;
+  top: 126px;
+  left: 91px;
+  line-height: 119px;
 }
 
 .word-reveal__word--highlight {
@@ -673,10 +673,11 @@ html.page-signature {
   height: 256px;
 }
 
-/* Seven lines (896px), centred in the green area above the footer (0–1636px). */
+/* v4 thank-you: caps from y=352 to 1321, eight lines on a ~124px pitch. */
 .thank-you-screen__message {
-  top: 370px;
+  top: 348px;
   left: 0;
+  line-height: 123.75px;
   width: 1080px;
   text-align: center;
 }
