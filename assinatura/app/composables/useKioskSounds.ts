@@ -8,7 +8,12 @@ const SOUNDS = {
 
 export type KioskSound = keyof typeof SOUNDS
 
-export function useKioskSounds() {
+interface KioskSoundsOptions {
+  // Called each time a sound starts, e.g. to duck the background music.
+  onPlay?: (audio: HTMLAudioElement) => void
+}
+
+export function useKioskSounds({ onPlay }: KioskSoundsOptions = {}) {
   const players = new Map<KioskSound, HTMLAudioElement>()
 
   function preload() {
@@ -26,7 +31,7 @@ export function useKioskSounds() {
     const audio = players.get(name)
     if (!audio) return
     audio.currentTime = 0
-    audio.play().catch(() => undefined)
+    audio.play().then(() => onPlay?.(audio)).catch(() => undefined)
   }
 
   function dispose() {

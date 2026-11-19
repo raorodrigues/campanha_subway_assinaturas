@@ -98,7 +98,8 @@ let autoRetryTimeout: Timer | null = null
 let recoveryTimeout: Timer | null = null
 // Holds decoded images so the browser keeps them ready for later screens.
 const preloadedImages: HTMLImageElement[] = []
-const sounds = useKioskSounds()
+const music = useBackgroundMusic()
+const sounds = useKioskSounds({ onPlay: music.duckWhile })
 
 function cancelTimer(timer: Timer | null): null {
   if (timer !== null) clearTimeout(timer)
@@ -290,6 +291,7 @@ onMounted(() => {
   window.addEventListener('wheel', blockZoomWheel, { passive: false })
   preloadImages()
   sounds.preload()
+  music.start()
   // The first welcome plays its entrance through <Transition appear>; its after-enter starts attract mode.
   isReady.value = true
 })
@@ -303,6 +305,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('wheel', blockZoomWheel)
   preloadedImages.length = 0
   sounds.dispose()
+  music.dispose()
 })
 </script>
 
