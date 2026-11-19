@@ -267,7 +267,8 @@ try {
       '--overscroll-history-navigation=0',
       '--disable-features=Translate,TranslateUI',
       '--disable-background-timer-throttling',
-      '--disable-renderer-backgrounding'
+      '--disable-renderer-backgrounding',
+      '--autoplay-policy=no-user-gesture-required'
     )
     if ($Browser.IsEdge) { $arguments += '--edge-kiosk-type=fullscreen' }
     $arguments += "`"$bootUrl`""
